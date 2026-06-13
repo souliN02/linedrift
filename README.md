@@ -1,11 +1,15 @@
 # OddsLens
 
+[![CI](https://github.com/souliN02/oddslens/actions/workflows/ci.yml/badge.svg)](https://github.com/souliN02/oddslens/actions/workflows/ci.yml)
+
 A self-hosted football odds tracker that snapshots bookmaker odds over time,
 computes no-vig consensus probabilities, and flags outlier prices.
 
+**Live demo:** https://oddslens-mocha.vercel.app
+
 > 🚧 Work in progress. Built in phases — see [`SPEC.md`](./SPEC.md) for the full
 > product spec and [`CLAUDE.md`](./CLAUDE.md) for working conventions. The full
-> README (architecture diagram, engineering decisions, live demo) lands in the
+> README (architecture diagram, engineering decisions, screenshots) lands in the
 > final polish phase.
 
 ## Stack
