@@ -1,0 +1,70 @@
+import {
+  bigserial,
+  index,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+// The Odds API sport key, e.g. "soccer_epl".
+export const leagues = pgTable("leagues", {
+  key: text("key").primaryKey(),
+  title: text("title").notNull(),
+});
+
+// The Odds API bookmaker key, e.g. "bet365".
+export const bookmakers = pgTable("bookmakers", {
+  key: text("key").primaryKey(),
+  title: text("title").notNull(),
+});
+
+export const matches = pgTable(
+  "matches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    externalId: text("external_id").notNull().unique(),
+    leagueKey: text("league_key")
+      .notNull()
+      .references(() => leagues.key),
+    homeTeam: text("home_team").notNull(),
+    awayTeam: text("away_team").notNull(),
+    commenceTime: timestamp("commence_time", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("matches_commence_time_idx").on(t.commenceTime)],
+);
+
+export const oddsSnapshots = pgTable(
+  "odds_snapshots",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => matches.id),
+    bookmakerKey: text("bookmaker_key")
+      .notNull()
+      .references(() => bookmakers.key),
+    // Odds are numeric in Postgres and come back as strings from Drizzle;
+    // convert to number only at the math/display layer. draw_odds is nullable
+    // to tolerate a bookmaker that omits the draw price (SPEC §7 edge case).
+    homeOdds: numeric("home_odds", { precision: 7, scale: 3 }).notNull(),
+    drawOdds: numeric("draw_odds", { precision: 7, scale: 3 }),
+    awayOdds: numeric("away_odds", { precision: 7, scale: 3 }).notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("odds_snapshots_match_captured_idx").on(t.matchId, t.capturedAt),
+    uniqueIndex("odds_snapshots_match_bookmaker_captured_uq").on(
+      t.matchId,
+      t.bookmakerKey,
+      t.capturedAt,
+    ),
+  ],
+);
+
+export type League = typeof leagues.$inferSelect;
+export type Bookmaker = typeof bookmakers.$inferSelect;
+export type Match = typeof matches.$inferSelect;
+export type OddsSnapshot = typeof oddsSnapshots.$inferSelect;

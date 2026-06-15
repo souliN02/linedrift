@@ -1,0 +1,382 @@
+[
+  {
+    "id": "e1a1f0c2b3d4e5f60718293a4b5c6d7e",
+    "sport_key": "soccer_epl",
+    "sport_title": "EPL",
+    "commence_time": "2026-06-16T18:30:00Z",
+    "home_team": "Arsenal",
+    "away_team": "Chelsea",
+    "bookmakers": [
+      {
+        "key": "pinnacle",
+        "title": "Pinnacle",
+        "last_update": "2026-06-15T09:00:11Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:11Z",
+            "outcomes": [
+              { "name": "Arsenal", "price": 2.07 },
+              { "name": "Chelsea", "price": 3.65 },
+              { "name": "Draw", "price": 3.55 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:02Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:02Z",
+            "outcomes": [
+              { "name": "Arsenal", "price": 2.0 },
+              { "name": "Chelsea", "price": 3.6 },
+              { "name": "Draw", "price": 3.5 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "williamhill",
+        "title": "William Hill",
+        "last_update": "2026-06-15T09:00:48Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:48Z",
+            "outcomes": [
+              { "name": "Arsenal", "price": 2.05 },
+              { "name": "Chelsea", "price": 3.5 },
+              { "name": "Draw", "price": 3.4 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "unibet",
+        "title": "Unibet",
+        "last_update": "2026-06-15T09:00:30Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:30Z",
+            "outcomes": [
+              { "name": "Arsenal", "price": 2.1 },
+              { "name": "Chelsea", "price": 3.55 },
+              { "name": "Draw", "price": 3.45 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "f2b2a1d3c4e5f6071829304a5b6c7d8e",
+    "sport_key": "soccer_epl",
+    "sport_title": "EPL",
+    "commence_time": "2026-06-17T19:00:00Z",
+    "home_team": "Liverpool",
+    "away_team": "Manchester City",
+    "bookmakers": [
+      {
+        "key": "pinnacle",
+        "title": "Pinnacle",
+        "last_update": "2026-06-15T09:00:15Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:15Z",
+            "outcomes": [
+              { "name": "Liverpool", "price": 2.62 },
+              { "name": "Manchester City", "price": 2.71 },
+              { "name": "Draw", "price": 3.5 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:09Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:09Z",
+            "outcomes": [
+              { "name": "Liverpool", "price": 2.55 },
+              { "name": "Manchester City", "price": 2.6 },
+              { "name": "Draw", "price": 3.4 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "marathonbet",
+        "title": "Marathonbet",
+        "last_update": "2026-06-15T09:00:53Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:53Z",
+            "outcomes": [
+              { "name": "Liverpool", "price": 2.6 },
+              { "name": "Manchester City", "price": 2.68 },
+              { "name": "Draw", "price": 3.48 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "a3c3b2e4d5f60718293041a5b6c7d8e9",
+    "sport_key": "soccer_epl",
+    "sport_title": "EPL",
+    "commence_time": "2026-06-20T14:00:00Z",
+    "home_team": "Tottenham Hotspur",
+    "away_team": "Manchester United",
+    "bookmakers": [
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:15Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:15Z",
+            "outcomes": [
+              { "name": "Tottenham Hotspur", "price": 2.4 },
+              { "name": "Manchester United", "price": 2.9 },
+              { "name": "Draw", "price": 3.45 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "williamhill",
+        "title": "William Hill",
+        "last_update": "2026-06-15T09:00:58Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:58Z",
+            "outcomes": [
+              { "name": "Tottenham Hotspur", "price": 2.38 },
+              { "name": "Manchester United", "price": 2.95 },
+              { "name": "Draw", "price": 3.4 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "pinnacle",
+        "title": "Pinnacle",
+        "last_update": "2026-06-15T09:00:19Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:19Z",
+            "outcomes": [
+              { "name": "Tottenham Hotspur", "price": 2.46 },
+              { "name": "Manchester United", "price": 3.0 },
+              { "name": "Draw", "price": 3.58 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "b4d4c3f5e60718293041a2b6c7d8e9f0",
+    "sport_key": "soccer_denmark_superliga",
+    "sport_title": "Danish Superliga",
+    "commence_time": "2026-06-18T17:00:00Z",
+    "home_team": "FC Copenhagen",
+    "away_team": "Brondby IF",
+    "bookmakers": [
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:21Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:21Z",
+            "outcomes": [
+              { "name": "FC Copenhagen", "price": 1.85 },
+              { "name": "Brondby IF", "price": 4.2 },
+              { "name": "Draw", "price": 3.7 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "unibet",
+        "title": "Unibet",
+        "last_update": "2026-06-15T09:00:34Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:34Z",
+            "outcomes": [
+              { "name": "FC Copenhagen", "price": 1.83 },
+              { "name": "Brondby IF", "price": 4.33 },
+              { "name": "Draw", "price": 3.75 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "pinnacle",
+        "title": "Pinnacle",
+        "last_update": "2026-06-15T09:00:23Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:23Z",
+            "outcomes": [
+              { "name": "FC Copenhagen", "price": 1.88 },
+              { "name": "Brondby IF", "price": 4.35 },
+              { "name": "Draw", "price": 3.82 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "c5e5d4061829304152a3b4c7d8e9f0a1",
+    "sport_key": "soccer_denmark_superliga",
+    "sport_title": "Danish Superliga",
+    "commence_time": "2026-06-19T16:00:00Z",
+    "home_team": "FC Midtjylland",
+    "away_team": "AGF Aarhus",
+    "bookmakers": [
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:27Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:27Z",
+            "outcomes": [
+              { "name": "FC Midtjylland", "price": 1.7 },
+              { "name": "AGF Aarhus", "price": 4.8 },
+              { "name": "Draw", "price": 3.9 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "williamhill",
+        "title": "William Hill",
+        "last_update": "2026-06-15T09:01:03Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:03Z",
+            "outcomes": [
+              { "name": "FC Midtjylland", "price": 1.72 },
+              { "name": "AGF Aarhus", "price": 4.6 },
+              { "name": "Draw", "price": 3.8 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "marathonbet",
+        "title": "Marathonbet",
+        "last_update": "2026-06-15T09:00:57Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:57Z",
+            "outcomes": [
+              { "name": "FC Midtjylland", "price": 1.71 },
+              { "name": "AGF Aarhus", "price": 4.75 },
+              { "name": "Draw", "price": 3.88 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "unibet",
+        "title": "Unibet",
+        "last_update": "2026-06-15T09:00:39Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:39Z",
+            "outcomes": [
+              { "name": "FC Midtjylland", "price": 1.69 },
+              { "name": "AGF Aarhus", "price": 4.9 },
+              { "name": "Draw", "price": 3.95 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d6f6e50718293041526374c8d9e0f1a2",
+    "sport_key": "soccer_denmark_superliga",
+    "sport_title": "Danish Superliga",
+    "commence_time": "2026-06-21T13:00:00Z",
+    "home_team": "FC Nordsjaelland",
+    "away_team": "Randers FC",
+    "bookmakers": [
+      {
+        "key": "pinnacle",
+        "title": "Pinnacle",
+        "last_update": "2026-06-15T09:00:27Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:00:27Z",
+            "outcomes": [
+              { "name": "FC Nordsjaelland", "price": 2.18 },
+              { "name": "Randers FC", "price": 3.3 },
+              { "name": "Draw", "price": 3.5 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "bet365",
+        "title": "Bet365",
+        "last_update": "2026-06-15T09:01:33Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:33Z",
+            "outcomes": [
+              { "name": "FC Nordsjaelland", "price": 2.15 },
+              { "name": "Randers FC", "price": 3.2 },
+              { "name": "Draw", "price": 3.4 }
+            ]
+          }
+        ]
+      },
+      {
+        "key": "williamhill",
+        "title": "William Hill",
+        "last_update": "2026-06-15T09:01:08Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-06-15T09:01:08Z",
+            "outcomes": [
+              { "name": "FC Nordsjaelland", "price": 2.2 },
+              { "name": "Randers FC", "price": 3.25 },
+              { "name": "Draw", "price": 3.45 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
