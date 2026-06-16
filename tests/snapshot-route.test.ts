@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/cron/snapshot/route";
 import { persistSnapshotRows } from "@/db/ingest";
+import { SPORT_KEYS } from "@/lib/odds-api";
 import fixture from "./fixtures/odds-response.json";
 
 // The route must never touch the DB or the live API in tests (SPEC §4):
@@ -86,8 +87,8 @@ describe("POST /api/cron/snapshot", () => {
       snapshots: 20,
       creditsRemaining: 476,
     });
-    // Two sport keys = two API calls (2 credits/run, SPEC §4).
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    // One API call per sport key.
+    expect(fetchSpy).toHaveBeenCalledTimes(SPORT_KEYS.length);
     expect(persistSnapshotRows).toHaveBeenCalledTimes(1);
   });
 
