@@ -44,6 +44,67 @@ export function parseOddsResponse(raw: unknown): OddsEvent[] {
   return oddsResponseSchema.parse(raw);
 }
 
+// The Odds API sport keys for the two MVP leagues (SPEC §2). One `/odds` call
+// per key x 1 region x 1 market = 2 credits per snapshot run (SPEC §4).
+export const SPORT_KEYS = [
+  "soccer_epl",
+  "soccer_denmark_superliga",
+] as const;
+
+const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
+
+export type OddsApiResult = {
+  events: OddsEvent[];
+  creditsRemaining: number | null;
+  creditsUsed: number | null;
+};
+
+function numericHeader(headers: Headers, name: string): number | null {
+  const raw = headers.get(name);
+  if (raw === null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Fetch and validate h2h odds for one sport key. Never call this in dev or tests
+ * (SPEC §4) — the cron route is the only caller, and tests inject `fetchImpl`.
+ * Returns the parsed events plus the API's remaining/used credit headers so the
+ * snapshot route can log the budget (SPEC §4.1).
+ */
+export async function fetchOdds(
+  sportKey: string,
+  options: { apiKey?: string; fetchImpl?: typeof fetch } = {},
+): Promise<OddsApiResult> {
+  const apiKey = options.apiKey ?? process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "ODDS_API_KEY is not set. Add it to the environment before fetching odds.",
+    );
+  }
+  const doFetch = options.fetchImpl ?? fetch;
+
+  const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/odds`);
+  url.searchParams.set("apiKey", apiKey);
+  url.searchParams.set("regions", "eu");
+  url.searchParams.set("markets", "h2h");
+  url.searchParams.set("oddsFormat", "decimal");
+
+  const res = await doFetch(url.toString());
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `The Odds API request for ${sportKey} failed: ${res.status} ${res.statusText} ${body}`.trim(),
+    );
+  }
+
+  return {
+    events: parseOddsResponse(await res.json()),
+    creditsRemaining: numericHeader(res.headers, "x-requests-remaining"),
+    creditsUsed: numericHeader(res.headers, "x-requests-used"),
+  };
+}
+
 export type LeagueRow = { key: string; title: string };
 export type BookmakerRow = { key: string; title: string };
 export type MatchRow = {
