@@ -49,9 +49,6 @@ export function parseOddsResponse(raw: unknown): OddsEvent[] {
 export const SPORT_KEYS = [
   "soccer_epl",
   "soccer_denmark_superliga",
-  // TEMP smoke test — revert. EPL/Superliga are off-season, so this in-season
-  // league lets a live cron run insert real rows to prove ingestion end-to-end.
-  "soccer_fifa_world_cup",
 ] as const;
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
