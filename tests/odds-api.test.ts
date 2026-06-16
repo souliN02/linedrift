@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { parseOddsResponse, toSnapshotRows } from "@/lib/odds-api";
+import { fetchOdds, parseOddsResponse, toSnapshotRows } from "@/lib/odds-api";
 import fixture from "./fixtures/odds-response.json";
 
 describe("parseOddsResponse", () => {
@@ -73,6 +73,71 @@ describe("toSnapshotRows", () => {
     const { snapshots, bookmakers } = toSnapshotRows(events);
     expect(snapshots).toHaveLength(0);
     expect(bookmakers).toHaveLength(0);
+  });
+});
+
+describe("fetchOdds", () => {
+  function jsonResponse(body: unknown, headers: Record<string, string> = {}) {
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "content-type": "application/json", ...headers },
+    });
+  }
+
+  it("requests eu/h2h/decimal odds and parses credit headers", async () => {
+    let calledUrl = "";
+    const fetchImpl = vi.fn(async (url: string) => {
+      calledUrl = url;
+      return jsonResponse(fixture, {
+        "x-requests-remaining": "478",
+        "x-requests-used": "22",
+      });
+    });
+
+    const result = await fetchOdds("soccer_epl", {
+      apiKey: "test-key",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.events).toHaveLength(6);
+    expect(result.creditsRemaining).toBe(478);
+    expect(result.creditsUsed).toBe(22);
+
+    const url = new URL(calledUrl);
+    expect(url.pathname).toBe("/v4/sports/soccer_epl/odds");
+    expect(url.searchParams.get("regions")).toBe("eu");
+    expect(url.searchParams.get("markets")).toBe("h2h");
+    expect(url.searchParams.get("oddsFormat")).toBe("decimal");
+    expect(url.searchParams.get("apiKey")).toBe("test-key");
+  });
+
+  it("returns null credits when the headers are absent", async () => {
+    const result = await fetchOdds("soccer_epl", {
+      apiKey: "k",
+      fetchImpl: (async () => jsonResponse([])) as unknown as typeof fetch,
+    });
+    expect(result.creditsRemaining).toBeNull();
+    expect(result.creditsUsed).toBeNull();
+  });
+
+  it("throws on a non-ok response", async () => {
+    const fetchImpl = (async () =>
+      new Response("nope", {
+        status: 429,
+        statusText: "Too Many Requests",
+      })) as unknown as typeof fetch;
+    await expect(
+      fetchOdds("soccer_epl", { apiKey: "k", fetchImpl }),
+    ).rejects.toThrow(/429/);
+  });
+
+  it("throws when no api key is available", async () => {
+    await expect(
+      fetchOdds("soccer_epl", {
+        apiKey: "",
+        fetchImpl: (async () => jsonResponse([])) as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow(/ODDS_API_KEY/);
   });
 });
 

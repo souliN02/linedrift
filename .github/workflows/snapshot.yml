@@ -1,0 +1,23 @@
+name: Snapshot
+
+# Snapshots odds every 3 hours = 8 runs/day x 2 credits = ~480 credits/month,
+# inside The Odds API free tier (SPEC §4). GitHub's scheduler can drift a few
+# minutes, which is fine here. Adjust the cron (e.g. every 4 hours) if credits
+# run low.
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger snapshot endpoint
+        env:
+          SNAPSHOT_URL: ${{ vars.SNAPSHOT_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        # -f makes curl exit non-zero (red run) on any HTTP >= 400.
+        run: |
+          curl -fsS --retry 2 -X POST "$SNAPSHOT_URL" \
+            -H "Authorization: Bearer $CRON_SECRET"
