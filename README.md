@@ -61,16 +61,25 @@ scheduled job snapshots odds every 3 hours and stores them in Postgres.
 
 ### Configuration
 
-| Where  | Name           | Value                                                  |
-| ------ | -------------- | ------------------------------------------------------ |
-| Vercel | `DATABASE_URL` | Neon connection string                                 |
-| Vercel | `ODDS_API_KEY` | the-odds-api.com key                                   |
-| Vercel | `CRON_SECRET`  | long random string                                     |
-| GitHub | `CRON_SECRET`  | secret — same value as Vercel                          |
+| Where  | Name           | Value                                                   |
+| ------ | -------------- | ------------------------------------------------------- |
+| Vercel | `DATABASE_URL` | Neon connection string                                  |
+| Vercel | `ODDS_API_KEY` | the-odds-api.com key                                    |
+| Vercel | `CRON_SECRET`  | long random string                                      |
+| GitHub | `CRON_SECRET`  | secret — same value as Vercel                           |
 | GitHub | `SNAPSHOT_URL` | variable — `https://<app>.vercel.app/api/cron/snapshot` |
 
 After setting these, trigger `snapshot.yml` via **workflow_dispatch** to confirm
 rows land in Neon and credits are logged in the Vercel function logs.
+
+## Dashboard
+
+The home page (`/`) lists matches kicking off in the next 7 days, with kickoff
+times in Europe/Copenhagen, a per-match count of bookmakers in the latest
+snapshot set, and a "last snapshot" indicator. A league filter (`?league=...`)
+is driven by the URL so the page stays a server component. It handles loading,
+empty (no snapshots yet vs. nothing upcoming), and error states. Best odds,
+overround, and value badges are layered on in a later phase.
 
 ## Disclaimer
 
