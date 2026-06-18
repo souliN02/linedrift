@@ -1,7 +1,7 @@
 import { Dashboard } from "@/components/dashboard";
 import {
+  getBookmakerCounts,
   getLastSnapshotAt,
-  getLatestBookmakerCounts,
   getLeagues,
   getUpcomingMatches,
 } from "@/db/queries";
@@ -32,7 +32,7 @@ export default async function Home({
   const matches = await getUpcomingMatches({
     leagueKey: activeLeague ?? undefined,
   });
-  const counts = await getLatestBookmakerCounts(matches.map((m) => m.id));
+  const counts = await getBookmakerCounts(matches.map((m) => m.id));
 
   const dashboardMatches = matches.map((m) => ({
     ...m,

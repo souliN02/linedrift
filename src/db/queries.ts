@@ -78,14 +78,14 @@ export async function getLastSnapshotAt(): Promise<Date | null> {
 }
 
 /**
- * For each given match, how many bookmakers are present in its *latest*
- * snapshot set (the rows sharing that match's most recent `captured_at`).
+ * For each given match, how many distinct bookmakers have quoted it.
  *
- * One grouped query returns the distinct-bookmaker count per
- * (match, captured_at); we reduce in JS to the latest captured_at per match.
- * Snapshot volumes are tiny for the MVP, so this avoids a window/CTE.
+ * `captured_at` is per-bookmaker (each row stores that bookmaker's
+ * `last_update`, not a single run timestamp — see `toSnapshotRows`), so there
+ * is no shared "latest snapshot" instant to group on. Counting distinct
+ * bookmaker keys per match gives the real coverage figure.
  */
-export async function getLatestBookmakerCounts(
+export async function getBookmakerCounts(
   matchIds: string[],
 ): Promise<Map<string, number>> {
   if (matchIds.length === 0) return new Map();
@@ -93,23 +93,11 @@ export async function getLatestBookmakerCounts(
   const rows = await getDb()
     .select({
       matchId: oddsSnapshots.matchId,
-      capturedAt: oddsSnapshots.capturedAt,
       bookmakerCount: countDistinct(oddsSnapshots.bookmakerKey),
     })
     .from(oddsSnapshots)
     .where(inArray(oddsSnapshots.matchId, matchIds))
-    .groupBy(oddsSnapshots.matchId, oddsSnapshots.capturedAt);
+    .groupBy(oddsSnapshots.matchId);
 
-  const latest = new Map<string, { capturedAt: Date; count: number }>();
-  for (const row of rows) {
-    const prev = latest.get(row.matchId);
-    if (!prev || row.capturedAt.getTime() > prev.capturedAt.getTime()) {
-      latest.set(row.matchId, {
-        capturedAt: row.capturedAt,
-        count: row.bookmakerCount,
-      });
-    }
-  }
-
-  return new Map([...latest].map(([id, v]) => [id, v.count]));
+  return new Map(rows.map((row) => [row.matchId, row.bookmakerCount]));
 }
