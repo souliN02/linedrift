@@ -16,6 +16,22 @@ export function formatKickoff(date: Date): string {
   return kickoffFormatter.format(date);
 }
 
+const chartTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Copenhagen",
+  day: "2-digit",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/**
+ * Compact label for chart axis ticks and tooltips, e.g. "19 Jun, 20:00", in
+ * Europe/Copenhagen. Accepts a Date or epoch-ms (chart points carry ms).
+ */
+export function formatChartTime(value: number | Date): string {
+  return chartTimeFormatter.format(value);
+}
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;

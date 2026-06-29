@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm";
 
 import { getDb } from "./client";
-import { leagues, matches, oddsSnapshots } from "./schema";
+import { bookmakers, leagues, matches, oddsSnapshots } from "./schema";
 
 // How far ahead the dashboard looks (SPEC §8: "next 7 days").
 const UPCOMING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -100,4 +100,83 @@ export async function getBookmakerCounts(
     .groupBy(oddsSnapshots.matchId);
 
   return new Map(rows.map((row) => [row.matchId, row.bookmakerCount]));
+}
+
+export type MatchDetail = {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: Date;
+  leagueKey: string;
+  leagueTitle: string | null;
+};
+
+// Canonical RFC 4122 UUID shape. `matches.id` is a Postgres uuid, so passing a
+// non-uuid string throws `22P02`; we screen it out and treat it as "not found".
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** One match by uuid (joined to its league title), or null if absent/invalid. */
+export async function getMatchById(id: string): Promise<MatchDetail | null> {
+  if (!UUID_RE.test(id)) return null;
+
+  const [row] = await getDb()
+    .select({
+      id: matches.id,
+      homeTeam: matches.homeTeam,
+      awayTeam: matches.awayTeam,
+      commenceTime: matches.commenceTime,
+      leagueKey: matches.leagueKey,
+      leagueTitle: leagues.title,
+    })
+    .from(matches)
+    .leftJoin(leagues, eq(matches.leagueKey, leagues.key))
+    .where(eq(matches.id, id))
+    .limit(1);
+
+  return row ?? null;
+}
+
+// Odds are `numeric` in Postgres and come back from Drizzle as strings; this is
+// the single read-side place they become numbers (mirrors `toSnapshotRows` on
+// the write side — CLAUDE.md). draw can be absent, so it stays number | null.
+export type MatchSnapshot = {
+  bookmakerKey: string;
+  bookmakerTitle: string | null;
+  homeOdds: number;
+  drawOdds: number | null;
+  awayOdds: number;
+  capturedAt: Date;
+};
+
+/**
+ * Every snapshot for a match over time, oldest first, joined to the bookmaker
+ * title. Feeds both the movement chart and (after deriving the latest row per
+ * bookmaker) the comparison table, so the detail page needs only this one read.
+ */
+export async function getMatchSnapshots(
+  matchId: string,
+): Promise<MatchSnapshot[]> {
+  const rows = await getDb()
+    .select({
+      bookmakerKey: oddsSnapshots.bookmakerKey,
+      bookmakerTitle: bookmakers.title,
+      homeOdds: oddsSnapshots.homeOdds,
+      drawOdds: oddsSnapshots.drawOdds,
+      awayOdds: oddsSnapshots.awayOdds,
+      capturedAt: oddsSnapshots.capturedAt,
+    })
+    .from(oddsSnapshots)
+    .leftJoin(bookmakers, eq(oddsSnapshots.bookmakerKey, bookmakers.key))
+    .where(eq(oddsSnapshots.matchId, matchId))
+    .orderBy(asc(oddsSnapshots.capturedAt));
+
+  return rows.map((r) => ({
+    bookmakerKey: r.bookmakerKey,
+    bookmakerTitle: r.bookmakerTitle,
+    homeOdds: Number(r.homeOdds),
+    drawOdds: r.drawOdds === null ? null : Number(r.drawOdds),
+    awayOdds: Number(r.awayOdds),
+    capturedAt: r.capturedAt,
+  }));
 }

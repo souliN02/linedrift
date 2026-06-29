@@ -81,6 +81,23 @@ is driven by the URL so the page stays a server component. It handles loading,
 empty (no snapshots yet vs. nothing upcoming), and error states. Best odds,
 overround, and value badges are layered on in a later phase.
 
+## Match detail
+
+Each match card links to `/match/[id]`, which reads the DB directly in a server
+component (no client fetching for the initial render) and shows:
+
+- an **odds-movement chart** ([Recharts](https://recharts.org)) — one line per
+  bookmaker over time, with a Home/Draw/Away toggle. The `captured_at` column is
+  per-bookmaker, so a sparse line connects across gaps (`connectNulls`).
+- a **comparison table** of the latest decimal odds per bookmaker, responsive
+  (collapses to cards on mobile). Implied/no-vig/overround/edge columns and
+  best-price highlighting are layered on in a later phase.
+
+The same shaped data is exposed over HTTP at **`GET /api/matches/[id]/history`**
+(`404` for an unknown/invalid id), reusing the query + shaping functions in
+[`src/lib/match-history.ts`](src/lib/match-history.ts) so there is one source of
+truth. Loading, not-found, and error states are handled per route segment.
+
 ## Disclaimer
 
 Educational analytics project. Not betting advice.
