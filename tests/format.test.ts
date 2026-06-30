@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { formatKickoff, formatRelativeTime } from "@/lib/format";
+import {
+  formatKickoff,
+  formatPercent,
+  formatRelativeTime,
+  formatSignedPercent,
+} from "@/lib/format";
 
 describe("formatRelativeTime", () => {
   const now = new Date("2026-06-18T12:00:00Z");
@@ -21,6 +26,30 @@ describe("formatRelativeTime", () => {
 
   it.each(cases)("%s -> %s", (_label, date, expected) => {
     expect(formatRelativeTime(date, now)).toBe(expected);
+  });
+});
+
+describe("formatPercent", () => {
+  const cases: [number, number | undefined, string][] = [
+    [0.495, undefined, "49.5%"],
+    [0.5, 0, "50%"],
+    [0.0808, 2, "8.08%"],
+    [1, undefined, "100.0%"],
+    [0, undefined, "0.0%"],
+  ];
+  it.each(cases)("%f -> %s", (value, digits, expected) => {
+    expect(formatPercent(value, digits)).toBe(expected);
+  });
+});
+
+describe("formatSignedPercent", () => {
+  const cases: [number, string][] = [
+    [0.042, "+4.2%"],
+    [-0.01, "-1.0%"],
+    [0, "+0.0%"],
+  ];
+  it.each(cases)("%f -> %s", (value, expected) => {
+    expect(formatSignedPercent(value)).toBe(expected);
   });
 });
 

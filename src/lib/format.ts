@@ -32,6 +32,23 @@ export function formatChartTime(value: number | Date): string {
   return chartTimeFormatter.format(value);
 }
 
+/**
+ * Format a 0–1 ratio as a percentage, e.g. `0.495 -> "49.5%"`. Used for implied
+ * probabilities, no-vig probabilities, and overround.
+ */
+export function formatPercent(value: number, fractionDigits = 1): string {
+  return `${(value * 100).toFixed(fractionDigits)}%`;
+}
+
+/**
+ * Like {@link formatPercent} but always signed, e.g. `0.042 -> "+4.2%"`,
+ * `-0.01 -> "-1.0%"`. Used for edge badges where the sign carries the meaning.
+ */
+export function formatSignedPercent(value: number, fractionDigits = 1): string {
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${(value * 100).toFixed(fractionDigits)}%`;
+}
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;

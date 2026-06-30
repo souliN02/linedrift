@@ -1,13 +1,4 @@
-import {
-  and,
-  asc,
-  countDistinct,
-  eq,
-  gte,
-  inArray,
-  lte,
-  max,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, max } from "drizzle-orm";
 
 import { getDb } from "./client";
 import { bookmakers, leagues, matches, oddsSnapshots } from "./schema";
@@ -77,31 +68,6 @@ export async function getLastSnapshotAt(): Promise<Date | null> {
   return row?.value ?? null;
 }
 
-/**
- * For each given match, how many distinct bookmakers have quoted it.
- *
- * `captured_at` is per-bookmaker (each row stores that bookmaker's
- * `last_update`, not a single run timestamp — see `toSnapshotRows`), so there
- * is no shared "latest snapshot" instant to group on. Counting distinct
- * bookmaker keys per match gives the real coverage figure.
- */
-export async function getBookmakerCounts(
-  matchIds: string[],
-): Promise<Map<string, number>> {
-  if (matchIds.length === 0) return new Map();
-
-  const rows = await getDb()
-    .select({
-      matchId: oddsSnapshots.matchId,
-      bookmakerCount: countDistinct(oddsSnapshots.bookmakerKey),
-    })
-    .from(oddsSnapshots)
-    .where(inArray(oddsSnapshots.matchId, matchIds))
-    .groupBy(oddsSnapshots.matchId);
-
-  return new Map(rows.map((row) => [row.matchId, row.bookmakerCount]));
-}
-
 export type MatchDetail = {
   id: string;
   homeTeam: string;
@@ -149,6 +115,26 @@ export type MatchSnapshot = {
   capturedAt: Date;
 };
 
+// The one place Drizzle's numeric strings become numbers, shared by every
+// snapshot read so the string→number conversion lives in a single spot.
+function toMatchSnapshot(r: {
+  bookmakerKey: string;
+  bookmakerTitle: string | null;
+  homeOdds: string;
+  drawOdds: string | null;
+  awayOdds: string;
+  capturedAt: Date;
+}): MatchSnapshot {
+  return {
+    bookmakerKey: r.bookmakerKey,
+    bookmakerTitle: r.bookmakerTitle,
+    homeOdds: Number(r.homeOdds),
+    drawOdds: r.drawOdds === null ? null : Number(r.drawOdds),
+    awayOdds: Number(r.awayOdds),
+    capturedAt: r.capturedAt,
+  };
+}
+
 /**
  * Every snapshot for a match over time, oldest first, joined to the bookmaker
  * title. Feeds both the movement chart and (after deriving the latest row per
@@ -171,12 +157,45 @@ export async function getMatchSnapshots(
     .where(eq(oddsSnapshots.matchId, matchId))
     .orderBy(asc(oddsSnapshots.capturedAt));
 
-  return rows.map((r) => ({
-    bookmakerKey: r.bookmakerKey,
-    bookmakerTitle: r.bookmakerTitle,
-    homeOdds: Number(r.homeOdds),
-    drawOdds: r.drawOdds === null ? null : Number(r.drawOdds),
-    awayOdds: Number(r.awayOdds),
-    capturedAt: r.capturedAt,
-  }));
+  return rows.map(toMatchSnapshot);
+}
+
+/**
+ * The latest snapshot per (match, bookmaker) for several matches at once,
+ * grouped by match id — the dashboard's value engine input. `captured_at` is
+ * per-bookmaker (see `toSnapshotRows`), so `DISTINCT ON (match, bookmaker)`
+ * ordered by `captured_at DESC` takes each bookmaker's most recent quote
+ * without pulling the full history.
+ */
+export async function getLatestSnapshotsForMatches(
+  matchIds: string[],
+): Promise<Map<string, MatchSnapshot[]>> {
+  if (matchIds.length === 0) return new Map();
+
+  const rows = await getDb()
+    .selectDistinctOn([oddsSnapshots.matchId, oddsSnapshots.bookmakerKey], {
+      matchId: oddsSnapshots.matchId,
+      bookmakerKey: oddsSnapshots.bookmakerKey,
+      bookmakerTitle: bookmakers.title,
+      homeOdds: oddsSnapshots.homeOdds,
+      drawOdds: oddsSnapshots.drawOdds,
+      awayOdds: oddsSnapshots.awayOdds,
+      capturedAt: oddsSnapshots.capturedAt,
+    })
+    .from(oddsSnapshots)
+    .leftJoin(bookmakers, eq(oddsSnapshots.bookmakerKey, bookmakers.key))
+    .where(inArray(oddsSnapshots.matchId, matchIds))
+    .orderBy(
+      oddsSnapshots.matchId,
+      oddsSnapshots.bookmakerKey,
+      desc(oddsSnapshots.capturedAt),
+    );
+
+  const byMatch = new Map<string, MatchSnapshot[]>();
+  for (const r of rows) {
+    const list = byMatch.get(r.matchId);
+    if (list) list.push(toMatchSnapshot(r));
+    else byMatch.set(r.matchId, [toMatchSnapshot(r)]);
+  }
+  return byMatch;
 }

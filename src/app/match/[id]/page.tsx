@@ -6,6 +6,7 @@ import { OddsChart } from "@/components/odds-chart";
 import { getMatchById, getMatchSnapshots } from "@/db/queries";
 import { formatKickoff } from "@/lib/format";
 import { latestByBookmaker, toChartSeries } from "@/lib/match-history";
+import { bestPrices, consensusProbabilities, enrichRows } from "@/lib/odds-math";
 
 // Reads the database per request — never prerendered, so `next build` / CI do
 // not need DATABASE_URL (matches the dashboard).
@@ -25,6 +26,13 @@ export default async function MatchPage({
   // bookmaker, derived in-memory) — no second query.
   const snapshots = await getMatchSnapshots(match.id);
   const latest = latestByBookmaker(snapshots);
+
+  // Value engine (odds-math): consensus + best prices drive the enriched rows
+  // the table renders. Components stay math-free (CLAUDE.md).
+  const consensus = consensusProbabilities(latest);
+  const best = bestPrices(latest);
+  const rows = enrichRows(latest, consensus, best);
+
   const series = {
     home: toChartSeries(snapshots, "home"),
     draw: toChartSeries(snapshots, "draw"),
@@ -74,7 +82,7 @@ export default async function MatchPage({
 
           <section>
             <h2 className="mb-3 text-sm font-semibold">Latest odds</h2>
-            <BookmakerTable rows={latest} />
+            <BookmakerTable rows={rows} consensus={consensus} />
           </section>
         </div>
       )}
