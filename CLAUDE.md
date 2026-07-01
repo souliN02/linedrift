@@ -1,4 +1,4 @@
-# CLAUDE.md - OddsLens
+# CLAUDE.md - LineDrift
 
 Football odds tracker. Full product spec lives in `SPEC.md` - read it before any task. Build strictly within the MVP scope in SPEC.md section 2; suggest extras, do not build them.
 

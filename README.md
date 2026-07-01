@@ -1,6 +1,6 @@
-# OddsLens
+# LineDrift
 
-[![CI](https://github.com/souliN02/oddslens/actions/workflows/ci.yml/badge.svg)](https://github.com/souliN02/oddslens/actions/workflows/ci.yml)
+[![CI](https://github.com/souliN02/linedrift/actions/workflows/ci.yml/badge.svg)](https://github.com/souliN02/linedrift/actions/workflows/ci.yml)
 
 **A football odds tracker that builds its own historical dataset** — snapshotting
 bookmaker odds every 3 hours, computing no-vig consensus probabilities, and
@@ -8,9 +8,9 @@ flagging prices that beat the market.
 
 **Live demo → https://oddslens-mocha.vercel.app** · **How it works → [/about](https://oddslens-mocha.vercel.app/about)**
 
-![OddsLens dashboard](docs/dashboard.png)
+![LineDrift dashboard](docs/dashboard.png)
 
-Free odds APIs only give you the _current_ price; history is paywalled. OddsLens
+Free odds APIs only give you the _current_ price; history is paywalled. LineDrift
 manufactures its own history under a real constraint — **500 free API credits a
 month** — which is the point of the project: a data pipeline sized around a hard
 budget, not a CRUD demo.
@@ -58,8 +58,8 @@ Vercel.
 Uses [pnpm](https://pnpm.io) (pinned via the `packageManager` field).
 
 ```bash
-git clone https://github.com/souliN02/oddslens.git
-cd oddslens
+git clone https://github.com/souliN02/linedrift.git
+cd linedrift
 pnpm install
 cp .env.example .env        # fill in DATABASE_URL (see below)
 

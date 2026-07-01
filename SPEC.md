@@ -1,8 +1,8 @@
-# OddsLens - Football Odds Tracker (MVP Spec)
+# LineDrift - Football Odds Tracker (MVP Spec)
 
 A self-hosted football odds tracker that snapshots bookmaker odds over time, computes no-vig consensus probabilities, and flags outlier prices. Built as a production-grade portfolio project: deployed, tested, CI-backed, and designed around a real-world API budget.
 
-> Rename freely. Suggested repo name: `oddslens`.
+> Renamed from the working title "OddsLens" (that name was taken); repo name: `linedrift`.
 
 ---
 

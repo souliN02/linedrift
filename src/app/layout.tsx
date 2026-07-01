@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "OddsLens — Football Odds Tracker",
-    template: "%s · OddsLens",
+    default: "LineDrift — Football Odds Tracker",
+    template: "%s · LineDrift",
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
@@ -27,12 +27,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: SITE_NAME,
     url: SITE_URL,
-    title: "OddsLens — Football Odds Tracker",
+    title: "LineDrift — Football Odds Tracker",
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "OddsLens — Football Odds Tracker",
+    title: "LineDrift — Football Odds Tracker",
     description: SITE_DESCRIPTION,
   },
 };
@@ -54,7 +54,7 @@ export default function RootLayout({
               href="/"
               className="font-mono text-sm font-semibold tracking-tight transition-opacity hover:opacity-80"
             >
-              Odds<span className="text-primary">Lens</span>
+              Line<span className="text-primary">Drift</span>
             </Link>
             <nav
               aria-label="Primary"

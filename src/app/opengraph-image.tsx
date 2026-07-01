@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 // default Node runtime so Next can statically generate the PNG at build time.
 // Hex colours mirror the "analytical instrument" theme — Satori does not support
 // oklch, so the tokens are translated to their nearest sRGB here.
-export const alt = "OddsLens — football odds tracker with no-vig value flags";
+export const alt = "LineDrift — football odds tracker with no-vig value flags";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -41,7 +41,7 @@ export default function OpengraphImage() {
               color: FG,
             }}
           >
-            Odds<span style={{ color: AZURE }}>Lens</span>
+            Line<span style={{ color: AZURE }}>Drift</span>
           </div>
           <div
             style={{

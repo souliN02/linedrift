@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How OddsLens builds its own historical odds dataset under a 500-credit-a-month API budget, and the no-vig consensus maths behind the value flags.",
+    "How LineDrift builds its own historical odds dataset under a 500-credit-a-month API budget, and the no-vig consensus maths behind the value flags.",
 };
 
 // The page is pure explanation — no database read — so it renders statically.
@@ -132,11 +132,11 @@ export default function AboutPage() {
       <header className="mb-10">
         <p className="eyebrow">About the project</p>
         <h1 className="font-heading mt-1.5 text-3xl font-bold tracking-tight">
-          How OddsLens works
+          How LineDrift works
         </h1>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-muted-foreground">
           Free odds APIs only give you the <em>current</em> price. History is
-          paywalled. So OddsLens builds its own dataset — snapshotting bookmaker
+          paywalled. So LineDrift builds its own dataset — snapshotting bookmaker
           odds every three hours — and turns that time series into no-vig
           consensus probabilities and value flags. It is a data pipeline built
           under a real constraint, not a CRUD demo.
@@ -149,7 +149,7 @@ export default function AboutPage() {
             The Odds API&apos;s free tier gives{" "}
             <span className="text-foreground">500 credits a month</span>, and its
             historical endpoints cost 10× the live ones. Rather than pay for
-            history, OddsLens manufactures it: a scheduled job records the{" "}
+            history, LineDrift manufactures it: a scheduled job records the{" "}
             <span className="text-foreground">match-winner (1X2)</span> market
             for the <span className="text-foreground">Premier League</span> and{" "}
             <span className="text-foreground">Danish Superliga</span> in decimal

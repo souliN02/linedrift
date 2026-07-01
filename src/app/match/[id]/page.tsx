@@ -35,7 +35,7 @@ export async function generateMetadata({
     description: `Odds movement and no-vig consensus for ${fixture} — ${
       match.leagueTitle ?? match.leagueKey
     }.`,
-    openGraph: { title: `${fixture} · OddsLens` },
+    openGraph: { title: `${fixture} · LineDrift` },
   };
 }
 
