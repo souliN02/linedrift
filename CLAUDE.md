@@ -36,6 +36,19 @@ pnpm db:seed         # seed local/dev DB from tests/fixtures/odds-response.json
 - Keep components small and colocated. No premature abstraction, no extra dependencies without asking.
 - Timezone: display kickoff times in Europe/Copenhagen.
 
+## UI / frontend design (Phase 6)
+
+Goal: the app should look intentionally designed, not like a templated AI default ("just another shadcn dashboard"). This is a recruiter-facing portfolio piece (SPEC §1, §12 Phase 6) — distinctiveness is the point. Use Anthropic's `frontend-design` skill as the design lead during Phase 6.
+
+Apply it hardest to `/about` (recruiter-facing) and overall presentation polish. Keep the data tables and odds charts restrained — clarity and scannability beat flair there.
+
+Guardrails (these override the skill's instincts):
+
+- **Stay in the existing system.** Build on shadcn/ui, Geist / Geist Mono, and `tw-animate-css`. No new fonts, animation libs, or other dependencies without asking first (see "no extra dependencies" above).
+- **Lighthouse pass is a Phase 6 done-criterion.** Motion must be cheap and tasteful; watch CLS and font/asset weight. Don't trade performance for effects.
+- **Tone: editorial/analytical credibility, not flashy betting site.** The footer says "Educational analytics. Not betting advice." — keep that posture. No casino/gambling energy.
+- **Avoid the known AI-design clichés** the skill warns about: cream + serif + terracotta, near-black + single acid/vermilion accent, broadsheet hairline-rule layouts, predictable purple gradients, generic system fonts.
+
 ## Project structure
 
 ```

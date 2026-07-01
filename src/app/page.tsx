@@ -1,10 +1,11 @@
 import { Dashboard } from "@/components/dashboard";
 import {
-  getBookmakerCounts,
   getLastSnapshotAt,
+  getLatestSnapshotsForMatches,
   getLeagues,
   getUpcomingMatches,
 } from "@/db/queries";
+import { summarizeMatch } from "@/lib/odds-math";
 
 // Reads the database per request — never prerendered at build time, so
 // `next build` / CI do not need DATABASE_URL.
@@ -32,12 +33,21 @@ export default async function Home({
   const matches = await getUpcomingMatches({
     leagueKey: activeLeague ?? undefined,
   });
-  const counts = await getBookmakerCounts(matches.map((m) => m.id));
+  const latestByMatch = await getLatestSnapshotsForMatches(
+    matches.map((m) => m.id),
+  );
 
-  const dashboardMatches = matches.map((m) => ({
-    ...m,
-    bookmakerCount: counts.get(m.id) ?? 0,
-  }));
+  const dashboardMatches = matches.map((m) => {
+    const summary = summarizeMatch(latestByMatch.get(m.id) ?? []);
+    return {
+      ...m,
+      bookmakerCount: summary.bookmakerCount,
+      best: summary.best,
+      lowestOverround: summary.lowestOverround,
+      bestEdges: summary.bestEdges,
+      value: summary.value,
+    };
+  });
 
   return (
     <Dashboard
