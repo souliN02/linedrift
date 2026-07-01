@@ -1,7 +1,7 @@
 // Single source of truth for absolute-URL metadata (OG tags, robots, sitemap).
 // Overridable per-environment; falls back to the production deployment.
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://oddslens-mocha.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://linedrift.vercel.app";
 
 export const SITE_NAME = "LineDrift";
 export const SITE_DESCRIPTION =

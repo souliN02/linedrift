@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Football odds tracker that snapshots bookmaker odds over time, computes no-vig consensus probabilities, and flags value prices.",
-  "homepage": "https://oddslens-mocha.vercel.app",
+  "homepage": "https://linedrift.vercel.app",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/souliN02/linedrift.git"

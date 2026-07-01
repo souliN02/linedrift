@@ -6,7 +6,7 @@
 bookmaker odds every 3 hours, computing no-vig consensus probabilities, and
 flagging prices that beat the market.
 
-**Live demo → https://oddslens-mocha.vercel.app** · **How it works → [/about](https://oddslens-mocha.vercel.app/about)**
+**Live demo → https://linedrift.vercel.app** · **How it works → [/about](https://linedrift.vercel.app/about)**
 
 ![LineDrift dashboard](docs/dashboard.png)
 
