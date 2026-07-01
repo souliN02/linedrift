@@ -2,6 +2,24 @@
   "name": "oddslens",
   "version": "0.1.0",
   "private": true,
+  "description": "Football odds tracker that snapshots bookmaker odds over time, computes no-vig consensus probabilities, and flags value prices.",
+  "homepage": "https://oddslens-mocha.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/souliN02/oddslens.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "football",
+    "odds",
+    "sports-betting",
+    "no-vig",
+    "nextjs",
+    "typescript",
+    "drizzle",
+    "postgres",
+    "data-pipeline"
+  ],
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "dev": "next dev",

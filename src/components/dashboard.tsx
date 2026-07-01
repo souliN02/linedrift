@@ -62,16 +62,25 @@ export function Dashboard({
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       <header className="mb-6">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">
-          OddsLens
+        <p className="eyebrow">Upcoming · next 7 days</p>
+        <h1 className="font-heading mt-1.5 text-3xl font-bold tracking-tight">
+          Match odds
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upcoming matches · next 7 days
+          Best available 1X2 prices across EU bookmakers, with no-vig consensus
+          and value flags.
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span
+            aria-hidden
+            className={cn(
+              "inline-block h-1.5 w-1.5 rounded-full",
+              lastSnapshotAt ? "bg-primary" : "bg-muted-foreground",
+            )}
+          />
           {lastSnapshotAt
-            ? `Last snapshot: ${formatRelativeTime(lastSnapshotAt, now)}`
-            : "Last snapshot: pending"}
+            ? `Last snapshot ${formatRelativeTime(lastSnapshotAt, now)}`
+            : "Last snapshot pending"}
         </p>
       </header>
 

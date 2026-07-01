@@ -73,7 +73,7 @@ describe("Dashboard", () => {
   it("shows the last-snapshot relative time", () => {
     renderDashboard();
     expect(
-      screen.getByText("Last snapshot: 12 minutes ago"),
+      screen.getByText("Last snapshot 12 minutes ago"),
     ).toBeInTheDocument();
   });
 

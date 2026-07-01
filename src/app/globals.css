@@ -83,25 +83,32 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/*
+ * "Analytical instrument" dark theme (Phase 6). Neutrals carry a faint cool
+ * slate tint (hue 255, tiny chroma) so the surface reads as deliberate rather
+ * than default-grayscale. --primary is an azure "signal" used for interactive
+ * / brand accents; the emerald value-green is reserved to *mean* value, so the
+ * two accents never compete. Contrast kept high for the Lighthouse a11y pass.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.155 0.012 255);
+  --foreground: oklch(0.985 0.002 255);
+  --card: oklch(0.205 0.014 255);
+  --card-foreground: oklch(0.985 0.002 255);
+  --popover: oklch(0.205 0.014 255);
+  --popover-foreground: oklch(0.985 0.002 255);
+  --primary: oklch(0.72 0.12 236);
+  --primary-foreground: oklch(0.17 0.02 255);
+  --secondary: oklch(0.27 0.013 255);
+  --secondary-foreground: oklch(0.985 0.002 255);
+  --muted: oklch(0.27 0.013 255);
+  --muted-foreground: oklch(0.72 0.02 255);
+  --accent: oklch(0.27 0.013 255);
+  --accent-foreground: oklch(0.985 0.002 255);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: oklch(0.85 0.02 255 / 10%);
+  --input: oklch(0.85 0.02 255 / 15%);
+  --ring: oklch(0.72 0.12 236);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -123,8 +130,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Faint azure aura at the top — a cheap paint (no layout cost) that gives
+       the flat dark surface some intentional depth. */
+    background-image: radial-gradient(
+      55rem 32rem at 50% -8rem,
+      oklch(0.72 0.12 236 / 0.06),
+      transparent 70%
+    );
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
+  }
+  /* Editorial-analytical signature: Geist Mono, uppercase, tracked — used for
+     eyebrows, the wordmark and metadata labels (not for display headings). */
+  .eyebrow {
+    @apply font-mono text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase;
   }
 }

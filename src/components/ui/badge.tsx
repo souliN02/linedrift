@@ -2,9 +2,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-// Small inline label. `value` is the positive/edge signal (emerald, matching the
-// chart's positive line colour since the theme tokens are all grayscale);
-// `best` marks the best available price; `neutral` is for muted chips (overround).
+// Small inline label. In the "analytical instrument" system green *means* value:
+// `value` (emerald) is the only green in the chrome, so an edge badge always
+// reads as a value signal. `best` marks the best available price using the azure
+// --primary accent; `neutral` is for muted chips (overround).
 const badgeVariants = cva(
   "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.7rem] leading-none font-medium whitespace-nowrap tabular-nums",
   {

@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { BookmakerTable } from "@/components/bookmaker-table";
 import { OddsChart } from "@/components/odds-chart";
@@ -12,6 +14,31 @@ import { bestPrices, consensusProbabilities, enrichRows } from "@/lib/odds-math"
 // not need DATABASE_URL (matches the dashboard).
 export const dynamic = "force-dynamic";
 
+// Deduped so generateMetadata and the page share a single query per request.
+const loadMatch = cache(getMatchById);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const match = await loadMatch(id);
+  // Malformed ids are already given a real 404 by proxy.ts; a well-formed
+  // but unknown uuid renders the not-found UI here. (Under Next's streaming this
+  // is a soft 200 — the framework cannot set 404 once the body has started.)
+  if (!match) notFound();
+
+  const fixture = `${match.homeTeam} v ${match.awayTeam}`;
+  return {
+    title: fixture,
+    description: `Odds movement and no-vig consensus for ${fixture} — ${
+      match.leagueTitle ?? match.leagueKey
+    }.`,
+    openGraph: { title: `${fixture} · OddsLens` },
+  };
+}
+
 export default async function MatchPage({
   params,
 }: {
@@ -19,7 +46,7 @@ export default async function MatchPage({
 }) {
   const { id } = await params;
 
-  const match = await getMatchById(id);
+  const match = await loadMatch(id);
   if (!match) notFound();
 
   // One read feeds both the chart (full history) and the table (latest per
@@ -49,17 +76,15 @@ export default async function MatchPage({
       </Link>
 
       <header className="mt-3 mb-8">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">
+        <p className="eyebrow">{match.leagueTitle ?? match.leagueKey}</p>
+        <h1 className="font-heading mt-1.5 text-2xl font-bold tracking-tight">
           {match.homeTeam}{" "}
           <span className="font-normal text-muted-foreground">v</span>{" "}
           {match.awayTeam}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {match.leagueTitle ?? match.leagueKey}
-        </p>
         <time
           dateTime={match.commenceTime.toISOString()}
-          className="mt-0.5 block text-xs text-muted-foreground"
+          className="mt-1 block text-xs text-muted-foreground"
         >
           {formatKickoff(match.commenceTime)}
         </time>

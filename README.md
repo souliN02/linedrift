@@ -2,32 +2,86 @@
 
 [![CI](https://github.com/souliN02/oddslens/actions/workflows/ci.yml/badge.svg)](https://github.com/souliN02/oddslens/actions/workflows/ci.yml)
 
-A self-hosted football odds tracker that snapshots bookmaker odds over time,
-computes no-vig consensus probabilities, and flags outlier prices.
+**A football odds tracker that builds its own historical dataset** — snapshotting
+bookmaker odds every 3 hours, computing no-vig consensus probabilities, and
+flagging prices that beat the market.
 
-**Live demo:** https://oddslens-mocha.vercel.app
+**Live demo → https://oddslens-mocha.vercel.app** · **How it works → [/about](https://oddslens-mocha.vercel.app/about)**
 
-> 🚧 Work in progress. Built in phases — see [`SPEC.md`](./SPEC.md) for the full
-> product spec and [`CLAUDE.md`](./CLAUDE.md) for working conventions. The full
-> README (architecture diagram, engineering decisions, screenshots) lands in the
-> final polish phase.
+![OddsLens dashboard](docs/dashboard.png)
+
+Free odds APIs only give you the _current_ price; history is paywalled. OddsLens
+manufactures its own history under a real constraint — **500 free API credits a
+month** — which is the point of the project: a data pipeline sized around a hard
+budget, not a CRUD demo.
+
+## Features
+
+- **Odds snapshots every 3 hours** into Postgres via a scheduled GitHub Actions job.
+- **Dashboard** of upcoming matches with best available price per outcome, the
+  offering bookmaker, lowest overround, and value badges.
+- **Match detail** with a Recharts odds-movement chart (line per bookmaker,
+  Home/Draw/Away toggle) and a per-bookmaker comparison table.
+
+  ![Match detail — odds movement chart and bookmaker table](docs/match-detail.png)
+
+- **Value engine** — implied probability, overround (vig), no-vig fair
+  probabilities, market consensus, and edge-vs-consensus flags, all
+  [pure and unit-tested](src/lib/odds-math.ts).
+- **`/about`** page explaining the pipeline and the maths with a live worked example.
+- TypeScript strict throughout, Zod-validated API boundary, 100+ tests, green CI.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  GHA[GitHub Actions cron - every 3h] -->|POST + Bearer CRON_SECRET| SNAP["/api/cron/snapshot"]
+  SNAP -->|fetch h2h odds, 2 leagues| ODDS[The Odds API]
+  SNAP -->|Zod validate + upsert| DB[(Neon Postgres)]
+  WEB[Next.js server components] --> DB
+  CHART["/api/matches/id/history"] --> DB
+```
+
+Pages read Postgres directly in React Server Components (no client fetching for
+the initial render). The only mutating endpoint is the snapshot route, guarded
+by a bearer secret. Raw API JSON is validated by Zod in a single boundary file so
+the rest of the app never sees an untrusted shape.
 
 ## Stack
 
-Next.js (App Router) · TypeScript strict · Tailwind CSS · shadcn/ui · Drizzle +
-Neon Postgres · Zod · Recharts · Vitest · GitHub Actions + Vercel.
+Next.js (App Router) · TypeScript strict · Tailwind CSS + shadcn/ui · Drizzle ORM
++ Neon Postgres · Zod · Recharts · Vitest + Testing Library · GitHub Actions +
+Vercel.
 
 ## Local setup
 
 Uses [pnpm](https://pnpm.io) (pinned via the `packageManager` field).
 
 ```bash
+git clone https://github.com/souliN02/oddslens.git
+cd oddslens
 pnpm install
-cp .env.example .env   # fill in values as later phases need them
-pnpm dev               # http://localhost:3000
+cp .env.example .env        # fill in DATABASE_URL (see below)
+
+pnpm db:migrate            # apply Drizzle migrations to the DB
+pnpm db:seed               # load tests/fixtures/odds-response.json into the DB
+pnpm dev                   # http://localhost:3000
 ```
 
-## Scripts
+`pnpm db:seed` populates the UI entirely from the saved fixture — **development
+and tests never call the live API** (the free tier is reserved for the scheduled
+job). You only need a `DATABASE_URL`; `ODDS_API_KEY` and `CRON_SECRET` are only
+required to run the live ingestion job.
+
+### Run the tests
+
+```bash
+pnpm test         # vitest run — odds math, Zod boundary, snapshot route, dashboard render
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # eslint
+```
+
+### Scripts
 
 ```bash
 pnpm dev             # local dev server
@@ -38,13 +92,10 @@ pnpm test            # vitest run
 pnpm format          # prettier --write .
 pnpm db:generate     # drizzle-kit generate migrations
 pnpm db:migrate      # apply migrations
-pnpm db:seed         # seed local/dev DB from tests/fixtures/odds-response.json
+pnpm db:seed         # seed local/dev DB from the fixture
 ```
 
 ## Ingestion pipeline
-
-Free odds APIs only expose _current_ odds, so OddsLens builds its own history: a
-scheduled job snapshots odds every 3 hours and stores them in Postgres.
 
 - **`POST /api/cron/snapshot`** is the only mutating endpoint. It requires
   `Authorization: Bearer ${CRON_SECRET}`, fetches h2h odds for both leagues from
@@ -55,9 +106,6 @@ scheduled job snapshots odds every 3 hours and stores them in Postgres.
   `(match, bookmaker, captured_at)` index makes duplicate runs harmless.
 - **[`.github/workflows/snapshot.yml`](.github/workflows/snapshot.yml)** curls
   that endpoint on a `0 */3 * * *` schedule (and on manual `workflow_dispatch`).
-- **Budget:** 2 leagues × 1 region (`eu`) × 1 market (`h2h`) = 2 credits/run ×
-  8 runs/day ≈ 480 of the free tier's 500 credits/month (see `SPEC.md` §4).
-  **Development and tests never call the live API** — use `pnpm db:seed`.
 
 ### Configuration
 
@@ -72,32 +120,39 @@ scheduled job snapshots odds every 3 hours and stores them in Postgres.
 After setting these, trigger `snapshot.yml` via **workflow_dispatch** to confirm
 rows land in Neon and credits are logged in the Vercel function logs.
 
-## Dashboard
+## Engineering decisions
 
-The home page (`/`) lists matches kicking off in the next 7 days, with kickoff
-times in Europe/Copenhagen, a per-match count of bookmakers in the latest
-snapshot set, and a "last snapshot" indicator. A league filter (`?league=...`)
-is driven by the URL so the page stays a server component. It handles loading,
-empty (no snapshots yet vs. nothing upcoming), and error states. Best odds,
-overround, and value badges are layered on in a later phase.
+- **Snapshots instead of a paywalled historical API.** The Odds API charges 10×
+  for history. Recording the live `h2h` market for two leagues costs
+  `regions × markets` = 2 credits/run; every 3 hours is 8 runs/day ≈ **480 of the
+  free tier's 500 credits/month**, leaving ~20 for manual testing. The schedule is
+  the single knob — every 4 hours drops it to ~360/month.
+- **Zod at the boundary.** All external JSON is parsed and validated in
+  [`src/lib/odds-api.ts`](src/lib/odds-api.ts) before touching the app, so a
+  provider change (or a malformed payload) is contained to one file.
+- **`numeric`, not float, for odds.** Prices are stored as Postgres `numeric` to
+  avoid binary-float drift; Drizzle returns them as strings and they are converted
+  to `number` in exactly one place ([`src/db/queries.ts`](src/db/queries.ts)),
+  never inline.
+- **Odds maths is pure and test-first.** Every calculation lives in
+  [`src/lib/odds-math.ts`](src/lib/odds-math.ts) as a pure function with
+  table-driven tests (implied, overround, no-vig, consensus, edge, best price),
+  covering edge cases like fewer than three bookmakers and missing draw prices.
+- **GitHub Actions as the scheduler, not Vercel Cron.** Vercel's Hobby plan caps
+  cron at one run per day; the pipeline needs every 3 hours, so the schedule lives
+  in GitHub Actions (a few minutes of drift is fine here).
+- **Server components read the DB directly.** No client data fetching for the
+  initial render; interactivity (chart toggles) is the only client-side code.
 
-## Match detail
+## Roadmap
 
-Each match card links to `/match/[id]`, which reads the DB directly in a server
-component (no client fetching for the initial render) and shows:
+Deliberately out of scope for the MVP (pick one next):
 
-- an **odds-movement chart** ([Recharts](https://recharts.org)) — one line per
-  bookmaker over time, with a Home/Draw/Away toggle. The `captured_at` column is
-  per-bookmaker, so a sparse line connects across gaps (`connectNulls`).
-- a **comparison table** of the latest decimal odds per bookmaker, responsive
-  (collapses to cards on mobile). Implied/no-vig/overround/edge columns and
-  best-price highlighting are layered on in a later phase.
-
-The same shaped data is exposed over HTTP at **`GET /api/matches/[id]/history`**
-(`404` for an unknown/invalid id), reusing the query + shaping functions in
-[`src/lib/match-history.ts`](src/lib/match-history.ts) so there is one source of
-truth. Loading, not-found, and error states are handled per route segment.
+- Email alerts when an edge over _X_% appears
+- Closing-line value: compare any snapshot against the final pre-kickoff price
+- More markets (totals) or arbitrage detection across bookmakers
+- A public, rate-limited JSON API
 
 ## Disclaimer
 
-Educational analytics project. Not betting advice.
+Educational analytics project. **Not betting advice.**
