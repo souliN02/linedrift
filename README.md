@@ -37,7 +37,7 @@ budget, not a CRUD demo.
 ```mermaid
 flowchart LR
   GHA[GitHub Actions cron - every 4h] -->|POST + Bearer CRON_SECRET| SNAP["/api/cron/snapshot"]
-  SNAP -->|fetch h2h odds, 2 leagues| ODDS[The Odds API]
+  SNAP -->|fetch h2h odds, 3 sport keys| ODDS[The Odds API]
   SNAP -->|Zod validate + upsert| DB[(Neon Postgres)]
   WEB[Next.js server components] --> DB
   CHART["/api/matches/id/history"] --> DB
@@ -51,8 +51,9 @@ the rest of the app never sees an untrusted shape.
 ## Stack
 
 Next.js (App Router) · TypeScript strict · Tailwind CSS + shadcn/ui · Drizzle ORM
-+ Neon Postgres · Zod · Recharts · Vitest + Testing Library · GitHub Actions +
-Vercel.
+
+- Neon Postgres · Zod · Recharts · Vitest + Testing Library · GitHub Actions +
+  Vercel.
 
 ## Local setup
 
@@ -99,14 +100,15 @@ pnpm db:seed         # seed local/dev DB from the fixture
 ## Ingestion pipeline
 
 - **`POST /api/cron/snapshot`** is the only mutating endpoint. It requires
-  `Authorization: Bearer ${CRON_SECRET}`, fetches h2h odds for both leagues from
+  `Authorization: Bearer ${CRON_SECRET}`, fetches h2h odds for every configured
+  league (EPL, Superliga, and the World Cup while it runs) from
   [The Odds API](https://the-odds-api.com), validates them through the Zod
   boundary in [`src/lib/odds-api.ts`](src/lib/odds-api.ts), upserts via
   [`src/db/ingest.ts`](src/db/ingest.ts), logs `x-requests-remaining`, and
   returns `{ matches, snapshots, creditsRemaining }`. A unique
   `(match, bookmaker, captured_at)` index makes duplicate runs harmless.
 - **[`.github/workflows/snapshot.yml`](.github/workflows/snapshot.yml)** curls
-  that endpoint on a `0 */3 * * *` schedule (and on manual `workflow_dispatch`).
+  that endpoint on a `0 */4 * * *` schedule (and on manual `workflow_dispatch`).
 
 ### Configuration
 

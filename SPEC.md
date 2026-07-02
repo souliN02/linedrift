@@ -74,7 +74,7 @@ Rules that follow from this:
 ```mermaid
 flowchart LR
   GHA[GitHub Actions cron - every 4h] -->|POST + Bearer CRON_SECRET| SNAP["/api/cron/snapshot"]
-  SNAP -->|fetch h2h odds, 2 leagues| ODDS[The Odds API]
+  SNAP -->|fetch h2h odds, 3 sport keys| ODDS[The Odds API]
   SNAP -->|Zod validate + upsert| DB[(Neon Postgres)]
   WEB[Next.js server components] --> DB
   CHART["/api/matches/id/history"] --> DB
@@ -167,7 +167,7 @@ Design: dark theme, responsive (tables collapse to cards on mobile), consistent 
 
 ## 9. Internal API
 
-- `POST /api/cron/snapshot` - requires `Authorization: Bearer ${CRON_SECRET}`. Fetches both leagues, validates with Zod, upserts entities, inserts snapshots. Returns JSON `{ matches, snapshots, creditsRemaining }`. Must be safe to retry (unique constraint on snapshots makes duplicate runs harmless).
+- `POST /api/cron/snapshot` - requires `Authorization: Bearer ${CRON_SECRET}`. Fetches every configured league, validates with Zod, upserts entities, inserts snapshots. Returns JSON `{ matches, snapshots, creditsRemaining }`. Must be safe to retry (unique constraint on snapshots makes duplicate runs harmless).
 - `GET /api/matches/[id]/history` - returns chart-ready series for the detail page.
 
 Everything else reads the DB in server components.
@@ -186,7 +186,7 @@ Everything else reads the DB in server components.
 **Workflows (`.github/workflows/`):**
 
 - `ci.yml` - on push + PR: install, lint, typecheck, test, build
-- `snapshot.yml` - `schedule: cron '0 */3 * * *'` + manual `workflow_dispatch`; curls the deployed snapshot endpoint with the secret. Note in README: GitHub schedules can drift a few minutes, which is fine here.
+- `snapshot.yml` - `schedule: cron '0 */4 * * *'` + manual `workflow_dispatch`; curls the deployed snapshot endpoint with the secret. Note in README: GitHub schedules can drift a few minutes, which is fine here.
 
 **Workflow discipline (even solo):** feature branch per phase, PR into main, CI must be green before merge. This produces a GitHub history that looks like a professional, not a student.
 
