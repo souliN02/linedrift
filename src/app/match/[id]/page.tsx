@@ -28,6 +28,13 @@ export const dynamic = "force-dynamic";
 // Deduped so generateMetadata and the page share a single query per request.
 const loadMatch = cache(getMatchById);
 
+// Request-time clock, outside the component render path (react-hooks/purity):
+// the page is force-dynamic, so "has kicked off" is evaluated per request the
+// same way the queries default their `now`.
+function hasKickedOff(commenceTime: Date): boolean {
+  return commenceTime.getTime() <= Date.now();
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -69,7 +76,7 @@ export default async function MatchPage({
   // the cron keeps capturing), and the closing-line panel grades openers
   // against the close. If nothing pre-kickoff was captured, fall back to the
   // plain latest set.
-  const isPast = match.commenceTime.getTime() <= Date.now();
+  const isPast = hasKickedOff(match.commenceTime);
   const lines = isPast
     ? openCloseByBookmaker(snapshots, match.commenceTime)
     : [];
