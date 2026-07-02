@@ -49,6 +49,42 @@ function OutcomeCell({
   );
 }
 
+// A finished match in the "Recently closed" list: no live prices to show, just
+// the fixture and a pointer to its closing-line report.
+export type RecentMatch = {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: Date;
+  leagueKey: string;
+  leagueTitle: string | null;
+};
+
+export function RecentMatchCard({ match }: { match: RecentMatch }) {
+  return (
+    <li>
+      <Link
+        href={`/match/${match.id}`}
+        className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">
+            {match.homeTeam} <span className="text-muted-foreground">v</span>{" "}
+            {match.awayTeam}
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {match.leagueTitle ?? match.leagueKey} · kicked off{" "}
+            {formatKickoff(match.commenceTime)}
+          </div>
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          Closing line report →
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export function MatchCard({ match }: { match: DashboardMatch }) {
   const hasOdds =
     match.best.home !== null ||

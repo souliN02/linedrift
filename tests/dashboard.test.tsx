@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Dashboard, type DashboardProps } from "@/components/dashboard";
-import type { DashboardMatch } from "@/components/match-card";
+import type { DashboardMatch, RecentMatch } from "@/components/match-card";
 import type { MatchSnapshot } from "@/db/queries";
 import { summarizeMatch } from "@/lib/odds-math";
 
@@ -116,5 +116,35 @@ describe("Dashboard", () => {
     expect(
       screen.queryByText(/showing the next scheduled fixtures/i),
     ).not.toBeInTheDocument();
+  });
+
+  const recentMatch: RecentMatch = {
+    id: "r1",
+    homeTeam: "FC Copenhagen",
+    awayTeam: "Brondby IF",
+    commenceTime: new Date("2026-06-18T17:00:00Z"),
+    leagueKey: "soccer_denmark_superliga",
+    leagueTitle: "Superliga",
+  };
+
+  it("lists recently closed matches linking to their closing-line reports", () => {
+    renderDashboard({ recentMatches: [recentMatch] });
+
+    expect(screen.getByText("Closing line reports")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /FC Copenhagen.*Closing line report/ }),
+    ).toHaveAttribute("href", "/match/r1");
+  });
+
+  it("still shows recently closed matches alongside an empty upcoming list", () => {
+    renderDashboard({ matches: [], recentMatches: [recentMatch] });
+
+    expect(screen.getByText(/No upcoming matches/)).toBeInTheDocument();
+    expect(screen.getByText("Closing line reports")).toBeInTheDocument();
+  });
+
+  it("omits the recently-closed section when there are none", () => {
+    renderDashboard();
+    expect(screen.queryByText("Closing line reports")).not.toBeInTheDocument();
   });
 });

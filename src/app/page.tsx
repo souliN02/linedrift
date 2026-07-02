@@ -4,6 +4,7 @@ import {
   getLatestSnapshotsForMatches,
   getLeagues,
   getNextUpcomingMatches,
+  getRecentPastMatches,
   getUpcomingMatches,
 } from "@/db/queries";
 import { summarizeMatch } from "@/lib/odds-math";
@@ -45,9 +46,12 @@ export default async function Home({
       })
     : upcoming;
 
-  const latestByMatch = await getLatestSnapshotsForMatches(
-    matches.map((m) => m.id),
-  );
+  const [latestByMatch, recentMatches] = await Promise.all([
+    getLatestSnapshotsForMatches(matches.map((m) => m.id)),
+    // Recently kicked-off matches link to their closing-line reports — without
+    // this the CLV pages would be unreachable by navigation.
+    getRecentPastMatches({ leagueKey: activeLeague ?? undefined, limit: 5 }),
+  ]);
 
   const dashboardMatches = matches.map((m) => {
     const summary = summarizeMatch(latestByMatch.get(m.id) ?? []);
@@ -67,6 +71,7 @@ export default async function Home({
       leagues={leagues}
       activeLeague={activeLeague}
       lastSnapshotAt={lastSnapshotAt}
+      recentMatches={recentMatches}
       showingNextFixtures={showingNextFixtures}
     />
   );
