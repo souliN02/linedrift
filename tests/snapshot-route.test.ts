@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/cron/snapshot/route";
-import { persistSnapshotRows } from "@/db/ingest";
+import { persistSnapshotRows, recordIngestionRun } from "@/db/ingest";
 import { SPORT_KEYS } from "@/lib/odds-api";
 import fixture from "./fixtures/odds-response.json";
 
@@ -9,6 +9,7 @@ import fixture from "./fixtures/odds-response.json";
 // persistence is mocked and global fetch is spied per case.
 vi.mock("@/db/ingest", () => ({
   persistSnapshotRows: vi.fn(),
+  recordIngestionRun: vi.fn(),
 }));
 
 const SECRET = "test-secret";
@@ -40,6 +41,7 @@ describe("POST /api/cron/snapshot", () => {
       matches: 6,
       snapshots: 20,
     });
+    vi.mocked(recordIngestionRun).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -54,6 +56,7 @@ describe("POST /api/cron/snapshot", () => {
     expect(res.status).toBe(401);
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(persistSnapshotRows).not.toHaveBeenCalled();
+    expect(recordIngestionRun).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong bearer token (401)", async () => {
@@ -73,7 +76,7 @@ describe("POST /api/cron/snapshot", () => {
     expect(persistSnapshotRows).not.toHaveBeenCalled();
   });
 
-  it("fetches both leagues, persists, and reports credits remaining", async () => {
+  it("fetches every sport key, persists, and reports credits remaining", async () => {
     // Fresh Response per call — a body can only be read once.
     const fetchSpy = vi
       .spyOn(globalThis, "fetch")
@@ -92,6 +95,41 @@ describe("POST /api/cron/snapshot", () => {
     expect(persistSnapshotRows).toHaveBeenCalledTimes(1);
   });
 
+  it("records an ok run with counts and credit headers", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      fixtureResponse(),
+    );
+
+    await POST(postRequest({ authorization: `Bearer ${SECRET}` }));
+
+    expect(recordIngestionRun).toHaveBeenCalledTimes(1);
+    expect(recordIngestionRun).toHaveBeenCalledWith({
+      status: "ok",
+      matchesSeen: 6,
+      snapshotsAttempted: 20,
+      creditsRemaining: 476,
+      creditsUsed: 24,
+    });
+  });
+
+  it("still returns 200 with the same body when recording the run fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      fixtureResponse(),
+    );
+    vi.mocked(recordIngestionRun).mockRejectedValue(
+      new Error("run log unavailable"),
+    );
+
+    const res = await POST(postRequest({ authorization: `Bearer ${SECRET}` }));
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      matches: 6,
+      snapshots: 20,
+      creditsRemaining: 476,
+    });
+  });
+
   it("returns 502 when the upstream fetch fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("rate limited", { status: 429 }),
@@ -101,5 +139,26 @@ describe("POST /api/cron/snapshot", () => {
 
     expect(res.status).toBe(502);
     expect(persistSnapshotRows).not.toHaveBeenCalled();
+  });
+
+  it("records an error run when the upstream fetch fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("rate limited", { status: 429 }),
+    );
+
+    const res = await POST(postRequest({ authorization: `Bearer ${SECRET}` }));
+
+    expect(res.status).toBe(502);
+    expect(recordIngestionRun).toHaveBeenCalledTimes(1);
+    expect(recordIngestionRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "error",
+        matchesSeen: 0,
+        snapshotsAttempted: 0,
+        // The first fetch failed, so no credit headers were ever seen.
+        creditsRemaining: null,
+        error: expect.stringContaining("429"),
+      }),
+    );
   });
 });
