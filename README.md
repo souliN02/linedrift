@@ -50,10 +50,9 @@ the rest of the app never sees an untrusted shape.
 
 ## Stack
 
-Next.js (App Router) · TypeScript strict · Tailwind CSS + shadcn/ui · Drizzle ORM
-
-- Neon Postgres · Zod · Recharts · Vitest + Testing Library · GitHub Actions +
-  Vercel.
+Next.js (App Router) · TypeScript strict · Tailwind CSS + shadcn/ui · Drizzle
+ORM + Neon Postgres · Zod · Recharts · Vitest + Testing Library · GitHub
+Actions + Vercel.
 
 ## Local setup
 
