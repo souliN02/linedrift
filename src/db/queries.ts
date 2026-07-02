@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte, max } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, lte, max } from "drizzle-orm";
 
 import { getDb } from "./client";
 import { bookmakers, leagues, matches, oddsSnapshots } from "./schema";
@@ -85,6 +85,41 @@ export async function getNextUpcomingMatches(
     .where(and(...conditions))
     .orderBy(asc(matches.commenceTime))
     .limit(options.limit ?? 10);
+}
+
+/**
+ * Recently kicked-off matches, most recent first — the dashboard's "Recently
+ * closed" list linking to closing-line reports. Same row shape as the upcoming
+ * queries so the cards can share types.
+ */
+export async function getRecentPastMatches(
+  options: {
+    leagueKey?: string;
+    now?: Date;
+    limit?: number;
+  } = {},
+): Promise<UpcomingMatch[]> {
+  const now = options.now ?? new Date();
+
+  const conditions = [lt(matches.commenceTime, now)];
+  if (options.leagueKey) {
+    conditions.push(eq(matches.leagueKey, options.leagueKey));
+  }
+
+  return getDb()
+    .select({
+      id: matches.id,
+      homeTeam: matches.homeTeam,
+      awayTeam: matches.awayTeam,
+      commenceTime: matches.commenceTime,
+      leagueKey: matches.leagueKey,
+      leagueTitle: leagues.title,
+    })
+    .from(matches)
+    .leftJoin(leagues, eq(matches.leagueKey, leagues.key))
+    .where(and(...conditions))
+    .orderBy(desc(matches.commenceTime))
+    .limit(options.limit ?? 5);
 }
 
 /** All leagues that have been seeded/ingested, for the dashboard filter. */

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { fetchOdds, parseOddsResponse, toSnapshotRows } from "@/lib/odds-api";
+import historyFixture from "./fixtures/odds-history.json";
 import fixture from "./fixtures/odds-response.json";
 
 describe("parseOddsResponse", () => {
@@ -170,3 +171,46 @@ function bookmakerEvent(outcomes: { name: string; price: number }[]) {
     ],
   };
 }
+
+// Sanity checks for the synthetic history fixture (four replayed cron runs for
+// two base matches, powering movement charts + closing-line reports in dev).
+describe("odds-history fixture", () => {
+  const events = parseOddsResponse(historyFixture);
+  const rows = toSnapshotRows(events);
+
+  it("passes the same boundary schema as a live response", () => {
+    expect(events).toHaveLength(8); // 2 matches x 4 runs
+  });
+
+  it("reuses base-fixture event ids so --history layers onto the base seed", () => {
+    const baseIds = new Set(parseOddsResponse(fixture).map((e) => e.id));
+    for (const event of events) {
+      expect(baseIds.has(event.id)).toBe(true);
+    }
+  });
+
+  it("encodes movement: at least two distinct captures per (match, bookmaker)", () => {
+    const captures = new Map<string, Set<number>>();
+    for (const s of rows.snapshots) {
+      const key = `${s.externalId}:${s.bookmakerKey}`;
+      const set = captures.get(key) ?? new Set<number>();
+      set.add(s.capturedAt.getTime());
+      captures.set(key, set);
+    }
+    expect(captures.size).toBeGreaterThan(0);
+    for (const [key, set] of captures) {
+      expect(set.size, key).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("keeps every capture strictly before its match's kickoff", () => {
+    const kickoffById = new Map(
+      events.map((e) => [e.id, Date.parse(e.commence_time)]),
+    );
+    for (const s of rows.snapshots) {
+      const kickoff = kickoffById.get(s.externalId);
+      expect(kickoff).toBeDefined();
+      expect(s.capturedAt.getTime()).toBeLessThan(kickoff ?? 0);
+    }
+  });
+});
