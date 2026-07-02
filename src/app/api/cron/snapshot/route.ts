@@ -1,4 +1,8 @@
-import { persistSnapshotRows } from "@/db/ingest";
+import {
+  persistSnapshotRows,
+  recordIngestionRun,
+  type IngestionRunInput,
+} from "@/db/ingest";
 import {
   fetchOdds,
   SPORT_KEYS,
@@ -29,14 +33,22 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Hoisted so the catch can log whatever credit headers were seen before the
+  // failure — a run that failed halfway may still have spent credits.
+  let creditsRemaining: number | null = null;
+  let creditsUsed: number | null = null;
+
   try {
     const events: OddsEvent[] = [];
-    let creditsRemaining: number | null = null;
 
     for (const sportKey of SPORT_KEYS) {
       const result = await fetchOdds(sportKey);
       events.push(...result.events);
-      creditsRemaining = result.creditsRemaining;
+      // Keep the last non-null header pair: the calls run sequentially, so the
+      // most recent value is also the lowest remaining count. A response
+      // without the headers must not wipe an earlier reading.
+      creditsRemaining = result.creditsRemaining ?? creditsRemaining;
+      creditsUsed = result.creditsUsed ?? creditsUsed;
       console.log(
         `[snapshot] ${sportKey}: ${result.events.length} events, credits remaining=${result.creditsRemaining} used=${result.creditsUsed}`,
       );
@@ -48,9 +60,35 @@ export async function POST(request: Request): Promise<Response> {
       `[snapshot] persisted ${matches} matches, ${snapshots} snapshots`,
     );
 
+    await recordRun({
+      status: "ok",
+      matchesSeen: matches,
+      snapshotsAttempted: snapshots,
+      creditsRemaining,
+      creditsUsed,
+    });
+
     return Response.json({ matches, snapshots, creditsRemaining });
   } catch (err) {
     console.error("[snapshot] failed:", err);
+    await recordRun({
+      status: "error",
+      matchesSeen: 0,
+      snapshotsAttempted: 0,
+      creditsRemaining,
+      creditsUsed,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return Response.json({ error: "Snapshot failed" }, { status: 502 });
+  }
+}
+
+// Best-effort run log: a failed insert is logged and swallowed so it can never
+// turn a successful snapshot into a 5xx (or mask the original failure).
+async function recordRun(input: IngestionRunInput): Promise<void> {
+  try {
+    await recordIngestionRun(input);
+  } catch (err) {
+    console.error("[snapshot] failed to record ingestion run:", err);
   }
 }
