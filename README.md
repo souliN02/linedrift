@@ -78,6 +78,7 @@ required to run the live ingestion job.
 
 ```bash
 pnpm test         # vitest run — odds math, Zod boundary, snapshot route, dashboard render
+pnpm test:e2e     # Playwright smoke — drives the real app; needs DATABASE_URL + a running dev server
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint
 ```

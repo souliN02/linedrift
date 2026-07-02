@@ -34,3 +34,55 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  # E2e smoke: seeded Neon branch → production build → Playwright. The
+  # neon-http driver needs a real Neon endpoint, so a plain Postgres service
+  # container can't back it; a dedicated Neon branch (secret
+  # NEON_CI_DATABASE_URL) does. Until that secret is configured the job
+  # no-ops green instead of failing red.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.NEON_CI_DATABASE_URL }}
+    steps:
+      - name: Note when the e2e database is not configured
+        if: env.DATABASE_URL == ''
+        run: echo "::notice::NEON_CI_DATABASE_URL secret not set — e2e skipped."
+
+      - uses: actions/checkout@v4
+        if: env.DATABASE_URL != ''
+
+      - name: Setup pnpm
+        if: env.DATABASE_URL != ''
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        if: env.DATABASE_URL != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        if: env.DATABASE_URL != ''
+        run: pnpm install
+
+      - name: Install Playwright browser
+        if: env.DATABASE_URL != ''
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Idempotent: onConflictDoNothing makes repeat seeds harmless.
+      - name: Migrate and seed the CI database
+        if: env.DATABASE_URL != ''
+        run: |
+          pnpm db:migrate
+          pnpm db:seed:history
+
+      - name: Build
+        if: env.DATABASE_URL != ''
+        run: pnpm build
+
+      - name: E2e smoke tests
+        if: env.DATABASE_URL != ''
+        run: pnpm exec playwright test

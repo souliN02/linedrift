@@ -12,5 +12,7 @@ export default defineConfig({
       "tests/**/*.{test,spec}.{ts,tsx}",
       "src/**/*.{test,spec}.{ts,tsx}",
     ],
+    // Playwright owns tests/e2e — its .spec files must not run under vitest.
+    exclude: ["tests/e2e/**", "node_modules/**"],
   },
 });
