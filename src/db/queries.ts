@@ -1,7 +1,15 @@
-import { and, asc, desc, eq, gte, inArray, lte, max } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lte, max } from "drizzle-orm";
 
 import { getDb } from "./client";
-import { bookmakers, leagues, matches, oddsSnapshots } from "./schema";
+import {
+  bookmakers,
+  ingestionRuns,
+  leagues,
+  matches,
+  oddsSnapshots,
+} from "./schema";
+
+export type { IngestionRun } from "./schema";
 
 // How far ahead the dashboard looks (SPEC §8: "next 7 days").
 const UPCOMING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -101,6 +109,21 @@ export async function getLastSnapshotAt(): Promise<Date | null> {
     .select({ value: max(oddsSnapshots.capturedAt) })
     .from(oddsSnapshots);
   return row?.value ?? null;
+}
+
+/** The most recent ingestion runs, newest first (id breaks same-instant ties). */
+export async function getRecentRuns(limit = 6) {
+  return getDb()
+    .select()
+    .from(ingestionRuns)
+    .orderBy(desc(ingestionRuns.ranAt), desc(ingestionRuns.id))
+    .limit(limit);
+}
+
+/** Total ingestion runs ever recorded. */
+export async function getRunCount(): Promise<number> {
+  const [row] = await getDb().select({ value: count() }).from(ingestionRuns);
+  return row?.value ?? 0;
 }
 
 export type MatchDetail = {
