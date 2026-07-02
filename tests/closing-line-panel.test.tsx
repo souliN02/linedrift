@@ -2,7 +2,11 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ClosingLinePanel } from "@/components/closing-line-panel";
-import type { ClvHeadline, ClvRow, ConsensusProbabilities } from "@/lib/odds-math";
+import type {
+  ClvHeadline,
+  ClvRow,
+  ConsensusProbabilities,
+} from "@/lib/odds-math";
 
 const OPENED_AT = new Date("2026-06-13T18:30:00Z");
 const CLOSED_AT = new Date("2026-06-16T14:30:00Z");
@@ -94,7 +98,9 @@ describe("ClosingLinePanel", () => {
         headline={null}
       />,
     );
-    expect(screen.getByText(/Closing consensus \(no-vig\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Closing consensus \(no-vig\)/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/across 3 bookmakers/)).toBeInTheDocument();
     expect(
       screen.getByText(/can be a few hours before the whistle/),

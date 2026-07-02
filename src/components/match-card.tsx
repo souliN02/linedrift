@@ -1,8 +1,17 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { formatKickoff, formatPercent, formatSignedPercent } from "@/lib/format";
-import type { BestPrice, BestPrices, OutcomeEdges, OutcomeFlags } from "@/lib/odds-math";
+import {
+  formatKickoff,
+  formatPercent,
+  formatSignedPercent,
+} from "@/lib/format";
+import type {
+  BestPrice,
+  BestPrices,
+  OutcomeEdges,
+  OutcomeFlags,
+} from "@/lib/odds-math";
 
 // View model for one dashboard row. The page precomputes the value-engine
 // figures (odds-math) so this component stays render-only (CLAUDE.md).

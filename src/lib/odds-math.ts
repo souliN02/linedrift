@@ -56,7 +56,10 @@ export function edge(odds: number, consensusFairProb: number): number {
 }
 
 /** Whether an edge clears the value threshold (configurable). */
-export function isValue(edgeValue: number, threshold = VALUE_THRESHOLD): boolean {
+export function isValue(
+  edgeValue: number,
+  threshold = VALUE_THRESHOLD,
+): boolean {
   return edgeValue >= threshold;
 }
 
@@ -361,9 +364,24 @@ export function enrichRows(
         draw: row.drawOdds,
         away: row.awayOdds,
       }),
-      home: buildCell(row.homeOdds, noVig?.home ?? null, consensus?.home ?? null, best.home),
-      draw: buildCell(row.drawOdds, noVig?.draw ?? null, consensus?.draw ?? null, best.draw),
-      away: buildCell(row.awayOdds, noVig?.away ?? null, consensus?.away ?? null, best.away),
+      home: buildCell(
+        row.homeOdds,
+        noVig?.home ?? null,
+        consensus?.home ?? null,
+        best.home,
+      ),
+      draw: buildCell(
+        row.drawOdds,
+        noVig?.draw ?? null,
+        consensus?.draw ?? null,
+        best.draw,
+      ),
+      away: buildCell(
+        row.awayOdds,
+        noVig?.away ?? null,
+        consensus?.away ?? null,
+        best.away,
+      ),
     };
   });
 }

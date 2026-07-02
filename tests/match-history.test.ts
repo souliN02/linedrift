@@ -158,7 +158,11 @@ describe("openCloseByBookmaker", () => {
     const [line] = openCloseByBookmaker(
       [
         snap({ bookmakerKey: "a", capturedAt: PRE_3, homeOdds: 1.9 }),
-        snap({ bookmakerKey: "a", capturedAt: KICKOFF.toISOString(), homeOdds: 1.85 }),
+        snap({
+          bookmakerKey: "a",
+          capturedAt: KICKOFF.toISOString(),
+          homeOdds: 1.85,
+        }),
       ],
       KICKOFF,
     );

@@ -120,7 +120,8 @@ export function Dashboard({
         <>
           {showingNextFixtures && (
             <p className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              No matches in the next 7 days — showing the next scheduled fixtures.
+              No matches in the next 7 days — showing the next scheduled
+              fixtures.
             </p>
           )}
           <ul className="space-y-2">

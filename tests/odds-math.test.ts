@@ -179,7 +179,12 @@ describe("consensusProbabilities", () => {
     expect(
       consensusProbabilities([
         snap({ bookmakerKey: "a", drawOdds: null, awayOdds: 2.0 }),
-        snap({ bookmakerKey: "b", drawOdds: null, homeOdds: 1.9, awayOdds: 2.1 }),
+        snap({
+          bookmakerKey: "b",
+          drawOdds: null,
+          homeOdds: 1.9,
+          awayOdds: 2.1,
+        }),
         snap({
           bookmakerKey: "c",
           drawOdds: null,
@@ -335,7 +340,11 @@ describe("enrichRows", () => {
 const OPENED_AT = new Date("2026-06-13T18:30:00Z");
 const CLOSED_AT = new Date("2026-06-16T14:30:00Z");
 
-type LineOdds = { homeOdds?: number; drawOdds?: number | null; awayOdds?: number };
+type LineOdds = {
+  homeOdds?: number;
+  drawOdds?: number | null;
+  awayOdds?: number;
+};
 
 function lineSnap(
   key: string,
@@ -468,8 +477,16 @@ describe("biggestClvMove", () => {
   it("keeps the first row/outcome on a tie", () => {
     const move = biggestClvMove(
       clvRows([
-        openClose({ key: "a", opening: { homeOdds: 2.2 }, closing: { homeOdds: 2.0 } }),
-        openClose({ key: "b", opening: { homeOdds: 2.2 }, closing: { homeOdds: 2.0 } }),
+        openClose({
+          key: "a",
+          opening: { homeOdds: 2.2 },
+          closing: { homeOdds: 2.0 },
+        }),
+        openClose({
+          key: "b",
+          opening: { homeOdds: 2.2 },
+          closing: { homeOdds: 2.0 },
+        }),
       ]),
     );
     expect(move?.bookmakerKey).toBe("a");
@@ -477,7 +494,9 @@ describe("biggestClvMove", () => {
   });
 
   it("returns null when no clv could be computed", () => {
-    expect(biggestClvMove(clvRows([openClose({ snapshotCount: 1 })]))).toBeNull();
+    expect(
+      biggestClvMove(clvRows([openClose({ snapshotCount: 1 })])),
+    ).toBeNull();
     expect(biggestClvMove([])).toBeNull();
   });
 });

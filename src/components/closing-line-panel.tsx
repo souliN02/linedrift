@@ -1,5 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import { formatChartTime, formatPercent, formatSignedPercent } from "@/lib/format";
+import {
+  formatChartTime,
+  formatPercent,
+  formatSignedPercent,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   isValue,
