@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { MatchSnapshot } from "@/db/queries";
-import { latestByBookmaker, toChartSeries } from "@/lib/match-history";
+import {
+  latestByBookmaker,
+  openCloseByBookmaker,
+  toChartSeries,
+} from "@/lib/match-history";
 
 function snap(over: {
   bookmakerKey: string;
@@ -111,5 +115,89 @@ describe("toChartSeries", () => {
 
   it("returns empty series for empty input", () => {
     expect(toChartSeries([], "home")).toEqual({ points: [], bookmakers: [] });
+  });
+});
+
+describe("openCloseByBookmaker", () => {
+  const KICKOFF = new Date("2026-06-16T18:30:00Z");
+  const PRE_1 = "2026-06-13T18:30:00Z";
+  const PRE_2 = "2026-06-14T18:30:00Z";
+  const PRE_3 = "2026-06-16T14:30:00Z";
+  const IN_PLAY = "2026-06-16T19:05:00Z";
+
+  // Kept from "@/lib/match-history" import above.
+  it("takes each bookmaker's first and last snapshot before kickoff", () => {
+    const [line] = openCloseByBookmaker(
+      [
+        snap({ bookmakerKey: "a", capturedAt: PRE_2, homeOdds: 2.1 }),
+        snap({ bookmakerKey: "a", capturedAt: PRE_1, homeOdds: 2.2 }),
+        snap({ bookmakerKey: "a", capturedAt: PRE_3, homeOdds: 1.9 }),
+      ],
+      KICKOFF,
+    );
+
+    expect(line?.opening.homeOdds).toBe(2.2);
+    expect(line?.closing.homeOdds).toBe(1.9);
+    expect(line?.snapshotCount).toBe(3);
+  });
+
+  it("excludes in-play snapshots captured after kickoff", () => {
+    const [line] = openCloseByBookmaker(
+      [
+        snap({ bookmakerKey: "a", capturedAt: PRE_3, homeOdds: 1.9 }),
+        snap({ bookmakerKey: "a", capturedAt: IN_PLAY, homeOdds: 1.2 }),
+      ],
+      KICKOFF,
+    );
+
+    expect(line?.closing.homeOdds).toBe(1.9);
+    expect(line?.snapshotCount).toBe(1);
+  });
+
+  it("includes a snapshot captured exactly at kickoff", () => {
+    const [line] = openCloseByBookmaker(
+      [
+        snap({ bookmakerKey: "a", capturedAt: PRE_3, homeOdds: 1.9 }),
+        snap({ bookmakerKey: "a", capturedAt: KICKOFF.toISOString(), homeOdds: 1.85 }),
+      ],
+      KICKOFF,
+    );
+
+    expect(line?.closing.homeOdds).toBe(1.85);
+    expect(line?.snapshotCount).toBe(2);
+  });
+
+  it("uses the single snapshot as both opening and closing", () => {
+    const [line] = openCloseByBookmaker(
+      [snap({ bookmakerKey: "a", capturedAt: PRE_1, homeOdds: 2.0 })],
+      KICKOFF,
+    );
+
+    expect(line?.opening).toBe(line?.closing);
+    expect(line?.snapshotCount).toBe(1);
+  });
+
+  it("returns one line per bookmaker, sorted by display title", () => {
+    const lines = openCloseByBookmaker(
+      [
+        snap({ bookmakerKey: "z", bookmakerTitle: "Zulu", capturedAt: PRE_1 }),
+        snap({ bookmakerKey: "a", bookmakerTitle: "Alpha", capturedAt: PRE_1 }),
+      ],
+      KICKOFF,
+    );
+    expect(lines.map((l) => l.bookmakerKey)).toEqual(["a", "z"]);
+  });
+
+  it("returns nothing when every snapshot is post-kickoff", () => {
+    expect(
+      openCloseByBookmaker(
+        [snap({ bookmakerKey: "a", capturedAt: IN_PLAY })],
+        KICKOFF,
+      ),
+    ).toEqual([]);
+  });
+
+  it("returns nothing for empty input", () => {
+    expect(openCloseByBookmaker([], KICKOFF)).toEqual([]);
   });
 });
