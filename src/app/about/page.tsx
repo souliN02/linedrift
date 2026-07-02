@@ -5,6 +5,7 @@ import type { MatchSnapshot } from "@/db/queries";
 import { formatPercent, formatSignedPercent } from "@/lib/format";
 import {
   bestPrices,
+  clv,
   consensusProbabilities,
   edge,
   impliedProbability,
@@ -25,9 +26,30 @@ export const metadata: Metadata = {
 // The worked example below runs the real value-engine functions so every number
 // on the page is authentic (SPEC §7), never hand-typed.
 const EXAMPLE: MatchSnapshot[] = [
-  { bookmakerKey: "pinnacle", bookmakerTitle: "Pinnacle", homeOdds: 2.1, drawOdds: 3.4, awayOdds: 3.6, capturedAt: new Date(0) },
-  { bookmakerKey: "bet365", bookmakerTitle: "Bet365", homeOdds: 2.08, drawOdds: 3.35, awayOdds: 3.65, capturedAt: new Date(0) },
-  { bookmakerKey: "betfair", bookmakerTitle: "Betfair", homeOdds: 2.36, drawOdds: 3.3, awayOdds: 3.4, capturedAt: new Date(0) },
+  {
+    bookmakerKey: "pinnacle",
+    bookmakerTitle: "Pinnacle",
+    homeOdds: 2.1,
+    drawOdds: 3.4,
+    awayOdds: 3.6,
+    capturedAt: new Date(0),
+  },
+  {
+    bookmakerKey: "bet365",
+    bookmakerTitle: "Bet365",
+    homeOdds: 2.08,
+    drawOdds: 3.35,
+    awayOdds: 3.65,
+    capturedAt: new Date(0),
+  },
+  {
+    bookmakerKey: "betfair",
+    bookmakerTitle: "Betfair",
+    homeOdds: 2.36,
+    drawOdds: 3.3,
+    awayOdds: 3.4,
+    capturedAt: new Date(0),
+  },
 ];
 
 const SAMPLE = EXAMPLE[0]; // Pinnacle — the single-book walkthrough row.
@@ -50,6 +72,8 @@ const bestHome = best.home;
 const homeEdge =
   bestHome && consensus ? edge(bestHome.price, consensus.home) : 0;
 const homeIsValue = isValue(homeEdge);
+// Betfair's 2.36 opener against a 2.21 close — the CLV walkthrough number.
+const exampleClv = clv(2.36, 2.21) ?? 0;
 
 function Section({
   eyebrow,
@@ -136,10 +160,10 @@ export default function AboutPage() {
         </h1>
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-muted-foreground">
           Free odds APIs only give you the <em>current</em> price. History is
-          paywalled. So LineDrift builds its own dataset — snapshotting bookmaker
-          odds every four hours — and turns that time series into no-vig
-          consensus probabilities and value flags. It is a data pipeline built
-          under a real constraint, not a CRUD demo.
+          paywalled. So LineDrift builds its own dataset — snapshotting
+          bookmaker odds every four hours — and turns that time series into
+          no-vig consensus probabilities and value flags. It is a data pipeline
+          built under a real constraint, not a CRUD demo.
         </p>
       </header>
 
@@ -147,15 +171,15 @@ export default function AboutPage() {
         <Section eyebrow="Why it exists" title="A dataset built under a budget">
           <p>
             The Odds API&apos;s free tier gives{" "}
-            <span className="text-foreground">500 credits a month</span>, and its
-            historical endpoints cost 10× the live ones. Rather than pay for
+            <span className="text-foreground">500 credits a month</span>, and
+            its historical endpoints cost 10× the live ones. Rather than pay for
             history, LineDrift manufactures it: a scheduled job records the{" "}
             <span className="text-foreground">match-winner (1X2)</span> market
             for the <span className="text-foreground">Premier League</span>,{" "}
-            <span className="text-foreground">Danish Superliga</span>, and — while
-            it is on — the{" "}
-            <span className="text-foreground">FIFA World Cup</span> in decimal odds
-            across EU bookmakers, and stores every reading in Postgres.
+            <span className="text-foreground">Danish Superliga</span>, and —
+            while it is on — the{" "}
+            <span className="text-foreground">FIFA World Cup</span> in decimal
+            odds across EU bookmakers, and stores every reading in Postgres.
           </p>
           <p>
             The whole project is designed around that ceiling — which is exactly
@@ -173,7 +197,7 @@ export default function AboutPage() {
                 <Arrow />
                 <Node title="/api/cron/snapshot" sub="bearer-auth route" />
                 <Arrow />
-                <Node title="The Odds API" sub="h2h · 2 leagues" />
+                <Node title="The Odds API" sub="h2h · 3 sport keys" />
                 <Arrow />
                 <Node title="Neon Postgres" sub="odds_snapshots" />
               </div>
@@ -203,30 +227,22 @@ export default function AboutPage() {
           title="Turning prices into probabilities"
         >
           <p>
-            A bookmaker&apos;s odds bake in their margin. The value engine strips
-            that out, builds a consensus fair price from the market, and flags
-            any bookmaker paying meaningfully more than consensus. Here is the
-            whole chain on a sample match — the numbers below are computed live
-            by the same functions the app runs.
+            A bookmaker&apos;s odds bake in their margin. The value engine
+            strips that out, builds a consensus fair price from the market, and
+            flags any bookmaker paying meaningfully more than consensus. Here is
+            the whole chain on a sample match — the numbers below are computed
+            live by the same functions the app runs.
           </p>
 
           <ol className="space-y-4">
-            <Step
-              n={1}
-              label="Implied probability"
-              formula="p = 1 / odds"
-            >
+            <Step n={1} label="Implied probability" formula="p = 1 / odds">
               Pinnacle&apos;s {SAMPLE.homeOdds.toFixed(2)} home price implies{" "}
               <Mono>{formatPercent(impliedHome)}</Mono>, the draw{" "}
               <Mono>{formatPercent(impliedDraw)}</Mono>, the away{" "}
               <Mono>{formatPercent(impliedAway)}</Mono>.
             </Step>
 
-            <Step
-              n={2}
-              label="Overround (the vig)"
-              formula="Σ implied − 1"
-            >
+            <Step n={2} label="Overround (the vig)" formula="Σ implied − 1">
               Those three add up to more than 100%. The excess —{" "}
               <Mono>{formatPercent(sampleOverround)}</Mono> here — is the
               bookmaker&apos;s margin, shown per book on every match.
@@ -239,15 +255,16 @@ export default function AboutPage() {
             >
               Dividing each implied probability by their sum removes the margin,
               leaving a fair line that totals 100%: home{" "}
-              <Mono>{sampleNoVig ? formatPercent(sampleNoVig.home) : "—"}</Mono>,
-              draw{" "}
+              <Mono>{sampleNoVig ? formatPercent(sampleNoVig.home) : "—"}</Mono>
+              , draw{" "}
               <Mono>
                 {sampleNoVig?.draw != null
                   ? formatPercent(sampleNoVig.draw)
                   : "—"}
               </Mono>
               , away{" "}
-              <Mono>{sampleNoVig ? formatPercent(sampleNoVig.away) : "—"}</Mono>.
+              <Mono>{sampleNoVig ? formatPercent(sampleNoVig.away) : "—"}</Mono>
+              .
             </Step>
 
             <Step
@@ -277,18 +294,27 @@ export default function AboutPage() {
               formula="odds × consensus − 1"
             >
               The best home price is{" "}
-              <Mono>
-                {bestHome ? bestHome.price.toFixed(2) : "—"}
-              </Mono>{" "}
-              at {bestHome?.bookmakerTitle ?? "—"}. Against consensus that is an
+              <Mono>{bestHome ? bestHome.price.toFixed(2) : "—"}</Mono> at{" "}
+              {bestHome?.bookmakerTitle ?? "—"}. Against consensus that is an
               edge of{" "}
               {homeIsValue ? (
                 <Badge variant="value">{formatSignedPercent(homeEdge)}</Badge>
               ) : (
                 <Mono>{formatSignedPercent(homeEdge)}</Mono>
               )}{" "}
-              — at or above the {formatPercent(VALUE_THRESHOLD, 0)} threshold, so
-              it is flagged as value.
+              — at or above the {formatPercent(VALUE_THRESHOLD, 0)} threshold,
+              so it is flagged as value.
+            </Step>
+
+            <Step n={6} label="Closing line value" formula="open / close − 1">
+              Once a match kicks off, every earlier price is graded against the
+              closing line — each bookmaker&apos;s last pre-kickoff quote, the
+              market&apos;s most informed estimate. An opener of 2.36 against a
+              2.21 close works out to{" "}
+              <Mono>{formatSignedPercent(exampleClv)}</Mono>: beating the close
+              consistently is the classic test of whether &quot;value&quot; was
+              real. Finished matches get a closing-line report on their detail
+              page.
             </Step>
           </ol>
 
@@ -309,7 +335,11 @@ export default function AboutPage() {
                   <ProbRow
                     key={s.bookmakerKey}
                     book={s.bookmakerTitle ?? s.bookmakerKey}
-                    odds={{ home: s.homeOdds, draw: s.drawOdds, away: s.awayOdds }}
+                    odds={{
+                      home: s.homeOdds,
+                      draw: s.drawOdds,
+                      away: s.awayOdds,
+                    }}
                   />
                 ))}
               </tbody>
@@ -334,9 +364,10 @@ export default function AboutPage() {
           </div>
           <p>
             Off-season a run is two credits, so usage sits near ~360 a month; a
-            World Cup month rises to ~486 — still under 500. Development and tests
-            never touch the live API; a single saved response fixture powers all
-            of it, and the schedule is the only knob if credits run low.
+            World Cup month rises to ~486 — still under 500. Development and
+            tests never touch the live API; a single saved response fixture
+            powers all of it, and the schedule is the only knob if credits run
+            low.
           </p>
         </Section>
       </div>
