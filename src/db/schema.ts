@@ -1,6 +1,7 @@
 import {
   bigserial,
   index,
+  integer,
   numeric,
   pgTable,
   text,
@@ -64,7 +65,30 @@ export const oddsSnapshots = pgTable(
   ],
 );
 
+// One row per snapshot cron run — the pipeline's own operational log, written
+// by the snapshot route and surfaced on /about. Append-only; failed runs are
+// recorded too (with `error`), since a run that failed may still have spent
+// credits.
+export const ingestionRuns = pgTable(
+  "ingestion_runs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    ranAt: timestamp("ran_at", { withTimezone: true }).notNull().defaultNow(),
+    status: text("status", { enum: ["ok", "error"] }).notNull(),
+    matchesSeen: integer("matches_seen").notNull().default(0),
+    // Insert-attempt count from persistSnapshotRows: rows skipped by the
+    // idempotent unique index (duplicate re-runs) are still counted.
+    snapshotsAttempted: integer("snapshots_attempted").notNull().default(0),
+    // From The Odds API x-requests-* headers; null when no call returned them.
+    creditsRemaining: integer("credits_remaining"),
+    creditsUsed: integer("credits_used"),
+    error: text("error"),
+  },
+  (t) => [index("ingestion_runs_ran_at_idx").on(t.ranAt)],
+);
+
 export type League = typeof leagues.$inferSelect;
 export type Bookmaker = typeof bookmakers.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type OddsSnapshot = typeof oddsSnapshots.$inferSelect;
+export type IngestionRun = typeof ingestionRuns.$inferSelect;

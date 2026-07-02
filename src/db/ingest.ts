@@ -1,6 +1,12 @@
 import type { SnapshotRows } from "../lib/odds-api";
 import { getDb } from "./client";
-import { bookmakers, leagues, matches, oddsSnapshots } from "./schema";
+import {
+  bookmakers,
+  ingestionRuns,
+  leagues,
+  matches,
+  oddsSnapshots,
+} from "./schema";
 
 /**
  * Persist normalized rows from `toSnapshotRows`. Shared by the seed script and
@@ -58,4 +64,32 @@ export async function persistSnapshotRows(
   }
 
   return { matches: rows.matches.length, snapshots: snapshotValues.length };
+}
+
+export type IngestionRunInput = {
+  status: "ok" | "error";
+  matchesSeen: number;
+  snapshotsAttempted: number;
+  creditsRemaining: number | null;
+  creditsUsed: number | null;
+  error?: string;
+};
+
+/**
+ * Append one row to the pipeline's run log (`ingestion_runs`). Callers must
+ * treat a failure here as non-fatal: losing a log row can never be allowed to
+ * fail the snapshot itself.
+ */
+export async function recordIngestionRun(
+  input: IngestionRunInput,
+): Promise<void> {
+  await getDb().insert(ingestionRuns).values({
+    status: input.status,
+    matchesSeen: input.matchesSeen,
+    snapshotsAttempted: input.snapshotsAttempted,
+    creditsRemaining: input.creditsRemaining,
+    creditsUsed: input.creditsUsed,
+    // Cap stored failure text; upstream error bodies can be arbitrarily long.
+    error: input.error?.slice(0, 500),
+  });
 }

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 
+import { PipelineHealth } from "@/components/pipeline-health";
+import { Stat } from "@/components/stat";
 import { Badge } from "@/components/ui/badge";
+import { getRecentRuns, getRunCount } from "@/db/queries";
 import type { MatchSnapshot } from "@/db/queries";
 import { formatPercent, formatSignedPercent } from "@/lib/format";
 import {
@@ -22,7 +25,11 @@ export const metadata: Metadata = {
     "How LineDrift builds its own historical odds dataset under a 500-credit-a-month API budget, and the no-vig consensus maths behind the value flags.",
 };
 
-// The page is pure explanation — no database read — so it renders statically.
+// The pipeline-health panel reads the run log per request, so the page renders
+// dynamically. Same reason as the dashboard: CI's `next build` has no
+// DATABASE_URL, so nothing here may be prerendered.
+export const dynamic = "force-dynamic";
+
 // The worked example below runs the real value-engine functions so every number
 // on the page is authentic (SPEC §7), never hand-typed.
 const EXAMPLE: MatchSnapshot[] = [
@@ -150,7 +157,12 @@ function ProbRow({
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [runs, totalRuns] = await Promise.all([
+    getRecentRuns(6),
+    getRunCount(),
+  ]);
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       <header className="mb-10">
@@ -370,6 +382,15 @@ export default function AboutPage() {
             low.
           </p>
         </Section>
+
+        <Section eyebrow="Operations" title="Pipeline health">
+          <p>
+            The numbers below are read live from the pipeline&apos;s own run
+            log: every snapshot run — including failed ones — records what it
+            saw and what the API said was left of the monthly budget.
+          </p>
+          <PipelineHealth runs={runs} totalRuns={totalRuns} />
+        </Section>
       </div>
 
       <p className="mt-12 rounded-lg border border-border bg-card px-4 py-3 text-center text-xs text-muted-foreground">
@@ -410,16 +431,5 @@ function Step({
         {children}
       </p>
     </li>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-3 text-center">
-      <div className="font-mono text-xl font-semibold text-foreground tabular-nums">
-        {value}
-      </div>
-      <div className="mt-0.5 text-[0.7rem] text-muted-foreground">{label}</div>
-    </div>
   );
 }
