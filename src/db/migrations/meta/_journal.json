@@ -8,6 +8,13 @@
       "when": 1781554065653,
       "tag": "0000_first_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783012224442,
+      "tag": "0001_misty_peter_parker",
+      "breakpoints": true
     }
   ]
 }
