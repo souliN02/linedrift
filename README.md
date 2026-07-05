@@ -8,7 +8,7 @@ flagging prices that beat the market.
 
 **Live demo → https://linedrift.vercel.app** · **How it works → [/about](https://linedrift.vercel.app/about)**
 
-![LineDrift dashboard](docs/dashboard.png)
+![LineDrift demo — dashboard, closing-line report, odds-movement chart toggles](docs/demo.gif)
 
 Free odds APIs only give you the _current_ price; history is paywalled. LineDrift
 manufactures its own history under a real constraint — **500 free API credits a
@@ -29,8 +29,16 @@ budget, not a CRUD demo.
 - **Value engine** — implied probability, overround (vig), no-vig fair
   probabilities, market consensus, and edge-vs-consensus flags, all
   [pure and unit-tested](src/lib/odds-math.ts).
+- **Closing line value** — every finished match gets a closing-line report:
+  opening vs closing price per bookmaker and outcome, the biggest move
+  headlined, and the closing no-vig consensus. The classic test of whether
+  "value" was real — powered entirely by the self-built history.
+- **Pipeline health** — every ingestion run records what it saw and what was
+  left of the monthly credit budget, shown live on
+  [/about](https://linedrift.vercel.app/about); failed runs included.
 - **`/about`** page explaining the pipeline and the maths with a live worked example.
-- TypeScript strict throughout, Zod-validated API boundary, 100+ tests, green CI.
+- TypeScript strict throughout, Zod-validated API boundary, 150+ unit tests plus
+  a Playwright e2e smoke, green CI.
 
 ## Architecture
 
@@ -150,10 +158,10 @@ rows land in Neon and credits are logged in the Vercel function logs.
 
 ## Roadmap
 
-Deliberately out of scope for the MVP (pick one next):
+Deliberately out of scope for now (closing-line value graduated from this list
+in v1.1):
 
 - Email alerts when an edge over _X_% appears
-- Closing-line value: compare any snapshot against the final pre-kickoff price
 - More markets (totals) or arbitrage detection across bookmakers
 - A public, rate-limited JSON API
 
