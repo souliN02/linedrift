@@ -33,7 +33,8 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:seed:history": "tsx src/db/seed.ts --history"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

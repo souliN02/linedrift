@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Dashboard, type DashboardProps } from "@/components/dashboard";
-import type { DashboardMatch } from "@/components/match-card";
+import type { DashboardMatch, RecentMatch } from "@/components/match-card";
 import type { MatchSnapshot } from "@/db/queries";
 import { summarizeMatch } from "@/lib/odds-math";
 
@@ -16,9 +16,30 @@ const leagues = [
 // Three full lines; Betfair's standout home price makes the home outcome a value.
 const captured = new Date("2026-06-18T11:48:00Z");
 const snapshots: MatchSnapshot[] = [
-  { bookmakerKey: "pinnacle", bookmakerTitle: "Pinnacle", homeOdds: 2.0, drawOdds: 3.4, awayOdds: 3.8, capturedAt: captured },
-  { bookmakerKey: "bet365", bookmakerTitle: "Bet365", homeOdds: 2.05, drawOdds: 3.35, awayOdds: 3.75, capturedAt: captured },
-  { bookmakerKey: "betfair", bookmakerTitle: "Betfair", homeOdds: 2.3, drawOdds: 3.3, awayOdds: 3.7, capturedAt: captured },
+  {
+    bookmakerKey: "pinnacle",
+    bookmakerTitle: "Pinnacle",
+    homeOdds: 2.0,
+    drawOdds: 3.4,
+    awayOdds: 3.8,
+    capturedAt: captured,
+  },
+  {
+    bookmakerKey: "bet365",
+    bookmakerTitle: "Bet365",
+    homeOdds: 2.05,
+    drawOdds: 3.35,
+    awayOdds: 3.75,
+    capturedAt: captured,
+  },
+  {
+    bookmakerKey: "betfair",
+    bookmakerTitle: "Betfair",
+    homeOdds: 2.3,
+    drawOdds: 3.3,
+    awayOdds: 3.7,
+    capturedAt: captured,
+  },
 ];
 const summary = summarizeMatch(snapshots);
 
@@ -116,5 +137,35 @@ describe("Dashboard", () => {
     expect(
       screen.queryByText(/showing the next scheduled fixtures/i),
     ).not.toBeInTheDocument();
+  });
+
+  const recentMatch: RecentMatch = {
+    id: "r1",
+    homeTeam: "FC Copenhagen",
+    awayTeam: "Brondby IF",
+    commenceTime: new Date("2026-06-18T17:00:00Z"),
+    leagueKey: "soccer_denmark_superliga",
+    leagueTitle: "Superliga",
+  };
+
+  it("lists recently closed matches linking to their closing-line reports", () => {
+    renderDashboard({ recentMatches: [recentMatch] });
+
+    expect(screen.getByText("Closing line reports")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /FC Copenhagen.*Closing line report/ }),
+    ).toHaveAttribute("href", "/match/r1");
+  });
+
+  it("still shows recently closed matches alongside an empty upcoming list", () => {
+    renderDashboard({ matches: [], recentMatches: [recentMatch] });
+
+    expect(screen.getByText(/No upcoming matches/)).toBeInTheDocument();
+    expect(screen.getByText("Closing line reports")).toBeInTheDocument();
+  });
+
+  it("omits the recently-closed section when there are none", () => {
+    renderDashboard();
+    expect(screen.queryByText("Closing line reports")).not.toBeInTheDocument();
   });
 });

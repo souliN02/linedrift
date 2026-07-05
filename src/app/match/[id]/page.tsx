@@ -4,11 +4,22 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { BookmakerTable } from "@/components/bookmaker-table";
+import { ClosingLinePanel } from "@/components/closing-line-panel";
 import { OddsChart } from "@/components/odds-chart";
 import { getMatchById, getMatchSnapshots } from "@/db/queries";
 import { formatKickoff } from "@/lib/format";
-import { latestByBookmaker, toChartSeries } from "@/lib/match-history";
-import { bestPrices, consensusProbabilities, enrichRows } from "@/lib/odds-math";
+import {
+  latestByBookmaker,
+  openCloseByBookmaker,
+  toChartSeries,
+} from "@/lib/match-history";
+import {
+  bestPrices,
+  biggestClvMove,
+  clvRows,
+  consensusProbabilities,
+  enrichRows,
+} from "@/lib/odds-math";
 
 // Reads the database per request — never prerendered, so `next build` / CI do
 // not need DATABASE_URL (matches the dashboard).
@@ -16,6 +27,13 @@ export const dynamic = "force-dynamic";
 
 // Deduped so generateMetadata and the page share a single query per request.
 const loadMatch = cache(getMatchById);
+
+// Request-time clock, outside the component render path (react-hooks/purity):
+// the page is force-dynamic, so "has kicked off" is evaluated per request the
+// same way the queries default their `now`.
+function hasKickedOff(commenceTime: Date): boolean {
+  return commenceTime.getTime() <= Date.now();
+}
 
 export async function generateMetadata({
   params,
@@ -49,16 +67,32 @@ export default async function MatchPage({
   const match = await loadMatch(id);
   if (!match) notFound();
 
-  // One read feeds both the chart (full history) and the table (latest per
-  // bookmaker, derived in-memory) — no second query.
+  // One read feeds the chart (full history), the table, and the closing-line
+  // report (both derived in-memory) — no second query.
   const snapshots = await getMatchSnapshots(match.id);
-  const latest = latestByBookmaker(snapshots);
+
+  // A finished match is graded against the closing line: the table shows each
+  // bookmaker's last pre-kickoff quote ("latest" would be in-play prices, which
+  // the cron keeps capturing), and the closing-line panel grades openers
+  // against the close. If nothing pre-kickoff was captured, fall back to the
+  // plain latest set.
+  const isPast = hasKickedOff(match.commenceTime);
+  const lines = isPast
+    ? openCloseByBookmaker(snapshots, match.commenceTime)
+    : [];
+  const hasClosing = lines.length > 0;
+  const latest = hasClosing
+    ? lines.map((l) => l.closing)
+    : latestByBookmaker(snapshots);
 
   // Value engine (odds-math): consensus + best prices drive the enriched rows
   // the table renders. Components stay math-free (CLAUDE.md).
   const consensus = consensusProbabilities(latest);
   const best = bestPrices(latest);
   const rows = enrichRows(latest, consensus, best);
+
+  const clvTable = clvRows(lines);
+  const headline = biggestClvMove(clvTable);
 
   const series = {
     home: toChartSeries(snapshots, "home"),
@@ -102,11 +136,25 @@ export default async function MatchPage({
               series={series}
               homeTeam={match.homeTeam}
               awayTeam={match.awayTeam}
+              kickoffMs={isPast ? match.commenceTime.getTime() : undefined}
             />
           </section>
 
+          {isPast && (
+            <section>
+              <h2 className="mb-3 text-sm font-semibold">Closing line</h2>
+              <ClosingLinePanel
+                rows={clvTable}
+                consensus={hasClosing ? consensus : null}
+                headline={headline}
+              />
+            </section>
+          )}
+
           <section>
-            <h2 className="mb-3 text-sm font-semibold">Latest odds</h2>
+            <h2 className="mb-3 text-sm font-semibold">
+              {hasClosing ? "Closing odds" : "Latest odds"}
+            </h2>
             <BookmakerTable rows={rows} consensus={consensus} />
           </section>
         </div>

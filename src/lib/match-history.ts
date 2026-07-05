@@ -40,6 +40,61 @@ export function latestByBookmaker(snapshots: MatchSnapshot[]): MatchSnapshot[] {
   );
 }
 
+export type BookmakerOpenClose = {
+  bookmakerKey: string;
+  bookmakerTitle: string | null;
+  opening: MatchSnapshot;
+  closing: MatchSnapshot;
+  /** How many pre-kickoff snapshots this bookmaker had. */
+  snapshotCount: number;
+};
+
+/**
+ * Each bookmaker's first and last snapshot at or before kickoff, sorted by
+ * display title — the input for closing-line-value math. The cron keeps
+ * running after kickoff, so in-play quotes exist in the history and must not
+ * count as a "closing" line: everything after `kickoff` is excluded, and a
+ * bookmaker with no pre-kickoff snapshot is omitted entirely.
+ */
+export function openCloseByBookmaker(
+  snapshots: MatchSnapshot[],
+  kickoff: Date,
+): BookmakerOpenClose[] {
+  const byBookmaker = new Map<
+    string,
+    { opening: MatchSnapshot; closing: MatchSnapshot; count: number }
+  >();
+
+  for (const s of snapshots) {
+    if (s.capturedAt.getTime() > kickoff.getTime()) continue;
+
+    const entry = byBookmaker.get(s.bookmakerKey);
+    if (!entry) {
+      byBookmaker.set(s.bookmakerKey, { opening: s, closing: s, count: 1 });
+      continue;
+    }
+    entry.count += 1;
+    if (s.capturedAt.getTime() < entry.opening.capturedAt.getTime()) {
+      entry.opening = s;
+    }
+    if (s.capturedAt.getTime() > entry.closing.capturedAt.getTime()) {
+      entry.closing = s;
+    }
+  }
+
+  return [...byBookmaker.values()]
+    .map(({ opening, closing, count }) => ({
+      bookmakerKey: closing.bookmakerKey,
+      bookmakerTitle: closing.bookmakerTitle,
+      opening,
+      closing,
+      snapshotCount: count,
+    }))
+    .sort((a, b) =>
+      displayTitle(a.closing).localeCompare(displayTitle(b.closing)),
+    );
+}
+
 // One point on the time axis: `t` is the captured timestamp in ms; every other
 // key is a bookmaker key mapped to its odds (null where that bookmaker had no
 // point at this time, so Recharts can `connectNulls` across gaps).

@@ -1,6 +1,11 @@
 import Link from "next/link";
 
-import { MatchCard, type DashboardMatch } from "@/components/match-card";
+import {
+  MatchCard,
+  RecentMatchCard,
+  type DashboardMatch,
+  type RecentMatch,
+} from "@/components/match-card";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +14,9 @@ export type DashboardProps = {
   leagues: { key: string; title: string }[];
   activeLeague: string | null;
   lastSnapshotAt: Date | null;
+  /** Recently kicked-off matches linking to their closing-line reports; the
+   * section is omitted entirely when empty. */
+  recentMatches?: RecentMatch[];
   /** True when `matches` are the nearest fixtures shown because the next-7-days
    * window was empty (off-season) — the list carries an explanatory note. */
   showingNextFixtures?: boolean;
@@ -46,6 +54,7 @@ export function Dashboard({
   leagues,
   activeLeague,
   lastSnapshotAt,
+  recentMatches = [],
   showingNextFixtures = false,
   now,
 }: DashboardProps) {
@@ -111,7 +120,8 @@ export function Dashboard({
         <>
           {showingNextFixtures && (
             <p className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              No matches in the next 7 days — showing the next scheduled fixtures.
+              No matches in the next 7 days — showing the next scheduled
+              fixtures.
             </p>
           )}
           <ul className="space-y-2">
@@ -120,6 +130,23 @@ export function Dashboard({
             ))}
           </ul>
         </>
+      )}
+
+      {recentMatches.length > 0 && (
+        <section className="mt-10">
+          <p className="eyebrow">Recently closed</p>
+          <h2 className="font-heading mt-1.5 text-xl font-bold tracking-tight">
+            Closing line reports
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            How every pre-kickoff price compared to the closing line.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {recentMatches.map((match) => (
+              <RecentMatchCard key={match.id} match={match} />
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   );

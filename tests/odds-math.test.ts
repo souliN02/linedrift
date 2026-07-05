@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { MatchSnapshot } from "@/db/queries";
+import type { BookmakerOpenClose } from "@/lib/match-history";
 import {
   VALUE_THRESHOLD,
   bestPrices,
+  biggestClvMove,
+  clv,
+  clvRows,
   consensusProbabilities,
   edge,
   enrichRows,
@@ -175,7 +179,12 @@ describe("consensusProbabilities", () => {
     expect(
       consensusProbabilities([
         snap({ bookmakerKey: "a", drawOdds: null, awayOdds: 2.0 }),
-        snap({ bookmakerKey: "b", drawOdds: null, homeOdds: 1.9, awayOdds: 2.1 }),
+        snap({
+          bookmakerKey: "b",
+          drawOdds: null,
+          homeOdds: 1.9,
+          awayOdds: 2.1,
+        }),
         snap({
           bookmakerKey: "c",
           drawOdds: null,
@@ -323,5 +332,171 @@ describe("enrichRows", () => {
     expect(c.home.isValue).toBe(false);
     expect(c.home.isBest).toBe(true); // best-price highlight is independent of consensus
     expect(c.home.implied).not.toBeNull();
+  });
+});
+
+// --- Closing line value (SPEC §14 post-MVP pick) ---
+
+const OPENED_AT = new Date("2026-06-13T18:30:00Z");
+const CLOSED_AT = new Date("2026-06-16T14:30:00Z");
+
+type LineOdds = {
+  homeOdds?: number;
+  drawOdds?: number | null;
+  awayOdds?: number;
+};
+
+function lineSnap(
+  key: string,
+  title: string | null,
+  capturedAt: Date,
+  over: LineOdds,
+): MatchSnapshot {
+  return {
+    bookmakerKey: key,
+    bookmakerTitle: title,
+    homeOdds: over.homeOdds ?? 2.0,
+    drawOdds: over.drawOdds === undefined ? 3.3 : over.drawOdds,
+    awayOdds: over.awayOdds ?? 3.6,
+    capturedAt,
+  };
+}
+
+// Build one bookmaker's open/close pair the way openCloseByBookmaker would.
+function openClose(over: {
+  key?: string;
+  title?: string | null;
+  opening?: LineOdds;
+  closing?: LineOdds;
+  snapshotCount?: number;
+}): BookmakerOpenClose {
+  const key = over.key ?? "pinnacle";
+  const title = over.title === undefined ? "Pinnacle" : over.title;
+  return {
+    bookmakerKey: key,
+    bookmakerTitle: title,
+    opening: lineSnap(key, title, OPENED_AT, over.opening ?? {}),
+    closing: lineSnap(key, title, CLOSED_AT, over.closing ?? {}),
+    snapshotCount: over.snapshotCount ?? 2,
+  };
+}
+
+describe("clv", () => {
+  const cases: [number, number, number][] = [
+    [2.2, 2.0, 0.1], // opening price beat the close
+    [1.8, 2.0, -0.1], // the market moved against the opener
+    [2.0, 2.0, 0],
+    [4.1, 3.65, 0.1232876712],
+  ];
+  it.each(cases)("clv(%f, %f) = %f", (opening, closing, expected) => {
+    expect(clv(opening, closing)).toBeCloseTo(expected, 6);
+  });
+
+  const guards: [string, number, number][] = [
+    ["zero closing odds", 2.0, 0],
+    ["zero opening odds", 0, 2.0],
+    ["negative closing odds", 2.0, -1],
+    ["NaN opening odds", NaN, 2.0],
+    ["Infinite closing odds", 2.0, Infinity],
+  ];
+  it.each(guards)("guards %s with null", (_label, opening, closing) => {
+    expect(clv(opening, closing)).toBeNull();
+  });
+});
+
+describe("clvRows", () => {
+  it("computes per-outcome open/close/clv for a full line", () => {
+    const [row] = clvRows([
+      openClose({
+        opening: { homeOdds: 2.2, drawOdds: 3.3, awayOdds: 3.0 },
+        closing: { homeOdds: 2.0, drawOdds: 3.6, awayOdds: 2.8 },
+      }),
+    ]);
+
+    expect(row?.bookmakerKey).toBe("pinnacle");
+    expect(row?.bookmakerTitle).toBe("Pinnacle");
+    expect(row?.openedAt).toEqual(OPENED_AT);
+    expect(row?.closedAt).toEqual(CLOSED_AT);
+    expect(row?.home).toMatchObject({ opening: 2.2, closing: 2.0 });
+    expect(row?.home.clv).toBeCloseTo(0.1, 6);
+    expect(row?.draw.clv).toBeCloseTo(3.3 / 3.6 - 1, 6);
+    expect(row?.away.clv).toBeCloseTo(3.0 / 2.8 - 1, 6);
+  });
+
+  it("nulls the draw clv when either side lacks a draw price, keeping home/away", () => {
+    const [row] = clvRows([
+      openClose({
+        opening: { drawOdds: 3.3 },
+        closing: { drawOdds: null },
+      }),
+    ]);
+
+    expect(row?.draw).toEqual({ opening: 3.3, closing: null, clv: null });
+    expect(row?.home.clv).not.toBeNull();
+    expect(row?.away.clv).not.toBeNull();
+  });
+
+  it("nulls every clv when only one pre-kickoff snapshot exists (no movement recorded)", () => {
+    const [row] = clvRows([openClose({ snapshotCount: 1 })]);
+
+    // Prices still shown; a 0.0% "movement" from a single reading would mislead.
+    expect(row?.home.opening).toBe(2.0);
+    expect(row?.home.closing).toBe(2.0);
+    expect(row?.home.clv).toBeNull();
+    expect(row?.draw.clv).toBeNull();
+    expect(row?.away.clv).toBeNull();
+  });
+
+  it("preserves input order and length", () => {
+    const rows = clvRows([
+      openClose({ key: "b", title: "Bravo" }),
+      openClose({ key: "a", title: "Alpha" }),
+    ]);
+    expect(rows.map((r) => r.bookmakerKey)).toEqual(["b", "a"]);
+  });
+});
+
+describe("biggestClvMove", () => {
+  it("picks the largest move by magnitude, either direction", () => {
+    const move = biggestClvMove(
+      clvRows([
+        openClose({
+          key: "a",
+          title: "Alpha",
+          opening: { homeOdds: 2.2, awayOdds: 3.0 },
+          closing: { homeOdds: 2.0, awayOdds: 3.6 }, // away drifted −16.7%
+        }),
+      ]),
+    );
+
+    expect(move?.outcome).toBe("away");
+    expect(move?.bookmakerKey).toBe("a");
+    expect(move?.clv).toBeCloseTo(3.0 / 3.6 - 1, 6);
+  });
+
+  it("keeps the first row/outcome on a tie", () => {
+    const move = biggestClvMove(
+      clvRows([
+        openClose({
+          key: "a",
+          opening: { homeOdds: 2.2 },
+          closing: { homeOdds: 2.0 },
+        }),
+        openClose({
+          key: "b",
+          opening: { homeOdds: 2.2 },
+          closing: { homeOdds: 2.0 },
+        }),
+      ]),
+    );
+    expect(move?.bookmakerKey).toBe("a");
+    expect(move?.outcome).toBe("home");
+  });
+
+  it("returns null when no clv could be computed", () => {
+    expect(
+      biggestClvMove(clvRows([openClose({ snapshotCount: 1 })])),
+    ).toBeNull();
+    expect(biggestClvMove([])).toBeNull();
   });
 });

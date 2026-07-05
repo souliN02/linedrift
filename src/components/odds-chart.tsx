@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -19,6 +20,9 @@ export type OddsChartProps = {
   series: Record<Outcome, ChartSeries>;
   homeTeam: string;
   awayTeam: string;
+  /** Kickoff (epoch ms). When set, a reference line separates pre-kickoff
+   * movement from in-play snapshots on finished matches. */
+  kickoffMs?: number;
 };
 
 // The theme's --chart-* tokens are all grayscale, which is unreadable with
@@ -34,7 +38,12 @@ const LINE_COLORS = [
   "#a3e635", // lime
 ];
 
-export function OddsChart({ series, homeTeam, awayTeam }: OddsChartProps) {
+export function OddsChart({
+  series,
+  homeTeam,
+  awayTeam,
+  kickoffMs,
+}: OddsChartProps) {
   const [outcome, setOutcome] = useState<Outcome>("home");
 
   const tabs: { value: Outcome; label: string }[] = [
@@ -109,6 +118,20 @@ export function OddsChart({ series, homeTeam, awayTeam }: OddsChartProps) {
                 }}
                 labelStyle={{ color: "var(--muted-foreground)" }}
               />
+              {kickoffMs !== undefined && (
+                <ReferenceLine
+                  x={kickoffMs}
+                  stroke="var(--muted-foreground)"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: "Kickoff",
+                    position: "insideTopRight",
+                    fill: "var(--muted-foreground)",
+                    fontSize: 11,
+                  }}
+                />
+              )}
               {active.bookmakers.map((bookmaker, i) => (
                 <Line
                   key={bookmaker.key}

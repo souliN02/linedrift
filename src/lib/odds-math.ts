@@ -4,6 +4,7 @@
 // `null` and tolerated throughout.
 
 import type { MatchSnapshot } from "@/db/queries";
+import type { BookmakerOpenClose } from "@/lib/match-history";
 
 /** Flag a price as "value" when its edge over consensus reaches this (3%). */
 export const VALUE_THRESHOLD = 0.03;
@@ -55,7 +56,10 @@ export function edge(odds: number, consensusFairProb: number): number {
 }
 
 /** Whether an edge clears the value threshold (configurable). */
-export function isValue(edgeValue: number, threshold = VALUE_THRESHOLD): boolean {
+export function isValue(
+  edgeValue: number,
+  threshold = VALUE_THRESHOLD,
+): boolean {
   return edgeValue >= threshold;
 }
 
@@ -202,6 +206,102 @@ export function summarizeMatch(latest: MatchSnapshot[]): MatchSummary {
   };
 }
 
+/**
+ * Closing line value: how an earlier price compares to the same bookmaker's
+ * closing (last pre-kickoff) price — `opening / closing − 1`. Positive means
+ * the earlier price beat the close; consistently beating the close is the
+ * classic test of whether "value" was real. Same-bookmaker comparison keeps
+ * that book's vig on both sides of the ratio, so it largely cancels.
+ * Guards mirror impliedProbability: null for non-finite or non-positive odds.
+ */
+export function clv(openingOdds: number, closingOdds: number): number | null {
+  if (!Number.isFinite(openingOdds) || openingOdds <= 0) return null;
+  if (!Number.isFinite(closingOdds) || closingOdds <= 0) return null;
+  return openingOdds / closingOdds - 1;
+}
+
+export type ClvCell = {
+  opening: number | null;
+  closing: number | null;
+  clv: number | null;
+};
+export type ClvRow = {
+  bookmakerKey: string;
+  bookmakerTitle: string | null;
+  openedAt: Date;
+  closedAt: Date;
+  home: ClvCell;
+  draw: ClvCell;
+  away: ClvCell;
+};
+
+function clvCell(
+  opening: number | null,
+  closing: number | null,
+  hasMovement: boolean,
+): ClvCell {
+  return {
+    opening,
+    closing,
+    clv:
+      hasMovement && opening !== null && closing !== null
+        ? clv(opening, closing)
+        : null,
+  };
+}
+
+/**
+ * Closing-line report rows, one per bookmaker, in the given order. A bookmaker
+ * with a single pre-kickoff snapshot keeps its prices but gets null clv —
+ * "no movement recorded" must read as a dash, not a misleading 0.0%.
+ */
+export function clvRows(lines: BookmakerOpenClose[]): ClvRow[] {
+  return lines.map((line) => {
+    const hasMovement = line.snapshotCount >= 2;
+    return {
+      bookmakerKey: line.bookmakerKey,
+      bookmakerTitle: line.bookmakerTitle,
+      openedAt: line.opening.capturedAt,
+      closedAt: line.closing.capturedAt,
+      home: clvCell(line.opening.homeOdds, line.closing.homeOdds, hasMovement),
+      draw: clvCell(line.opening.drawOdds, line.closing.drawOdds, hasMovement),
+      away: clvCell(line.opening.awayOdds, line.closing.awayOdds, hasMovement),
+    };
+  });
+}
+
+export type ClvHeadline = {
+  bookmakerKey: string;
+  bookmakerTitle: string | null;
+  outcome: OutcomeKey;
+  clv: number;
+};
+
+/**
+ * The single largest open→close move by magnitude across every bookmaker and
+ * outcome (a big drift against the opener is as newsworthy as a big beat).
+ * Strictly-greater comparison keeps the first row/outcome on a tie; null when
+ * nothing was computable.
+ */
+export function biggestClvMove(rows: ClvRow[]): ClvHeadline | null {
+  let best: ClvHeadline | null = null;
+  for (const row of rows) {
+    for (const outcome of ["home", "draw", "away"] as const) {
+      const value = row[outcome].clv;
+      if (value === null) continue;
+      if (best === null || Math.abs(value) > Math.abs(best.clv)) {
+        best = {
+          bookmakerKey: row.bookmakerKey,
+          bookmakerTitle: row.bookmakerTitle,
+          outcome,
+          clv: value,
+        };
+      }
+    }
+  }
+  return best;
+}
+
 export type OutcomeCell = {
   odds: number | null;
   implied: number | null;
@@ -264,9 +364,24 @@ export function enrichRows(
         draw: row.drawOdds,
         away: row.awayOdds,
       }),
-      home: buildCell(row.homeOdds, noVig?.home ?? null, consensus?.home ?? null, best.home),
-      draw: buildCell(row.drawOdds, noVig?.draw ?? null, consensus?.draw ?? null, best.draw),
-      away: buildCell(row.awayOdds, noVig?.away ?? null, consensus?.away ?? null, best.away),
+      home: buildCell(
+        row.homeOdds,
+        noVig?.home ?? null,
+        consensus?.home ?? null,
+        best.home,
+      ),
+      draw: buildCell(
+        row.drawOdds,
+        noVig?.draw ?? null,
+        consensus?.draw ?? null,
+        best.draw,
+      ),
+      away: buildCell(
+        row.awayOdds,
+        noVig?.away ?? null,
+        consensus?.away ?? null,
+        best.away,
+      ),
     };
   });
 }
